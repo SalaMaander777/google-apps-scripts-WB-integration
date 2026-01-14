@@ -34,7 +34,7 @@ function getSpreadsheetId() {
  * @return {string} Имя листа
  */
 function getFinanceDailySheetName() {
-  return 'Ежедневные фин отчеты';
+  return 'Ежедневные ф отчеты';
 }
 
 /**

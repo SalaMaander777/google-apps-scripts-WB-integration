@@ -1,197 +1,166 @@
 /**
- * Модуль для ежедневных финансовых отчетов
- * Выгружает данные за предыдущий день с дозаписыванием
+ * Модуль для формирования финансовых отчетов (Ф отчет)
+ * Выгружает данные через API и формирует таблицу по заданной структуре
  */
 
 /**
- * Заголовки столбцов для листа "Ежедневные фин отчеты"
- */
-function getFinanceDailyHeaders() {
-  return [
-    'Дата',
-    'rrd_id',
-    'gi_id',
-    'subject_name',
-    'nm_id',
-    'brand_name',
-    'sa_name',
-    'ts_name',
-    'barcode',
-    'doc_type_name',
-    'quantity',
-    'retail_price',
-    'retail_amount',
-    'sale_percent',
-    'commission_percent',
-    'office_name',
-    'supplier_oper_name',
-    'order_dt',
-    'sale_dt',
-    'rr_dt',
-    'shk_id',
-    'retail_price_withdisc_rub',
-    'delivery_amount',
-    'return_amount',
-    'delivery_rub',
-    'gi_box_type_name',
-    'product_discount_for_report',
-    'supplier_promo',
-    'rid',
-    'ppvz_spp_prc',
-    'ppvz_kvw_prc_base',
-    'ppvz_kvw_prc',
-    'ppvz_sales_commission',
-    'ppvz_for_pay',
-    'ppvz_reward',
-    'acquiring_fee',
-    'acquiring_bank',
-    'ppvz_vw',
-    'ppvz_vw_nds',
-    'ppvz_office_id',
-    'ppvz_office_name',
-    'ppvz_supplier_id',
-    'ppvz_supplier_name',
-    'ppvz_inn',
-    'declaration_number',
-    'bonus_type_name',
-    'sticker_id',
-    'site_country',
-    'penalty',
-    'additional_payment',
-    'rebill_logistic_cost',
-    'rebill_logistic_org',
-    'kiz',
-    'storage_fee',
-    'deduction',
-    'acceptance',
-    'srid'
-  ];
-}
-
-/**
- * Преобразовать запись API в строку для таблицы
- * @param {Object} record - Запись из API
- * @param {string} reportDate - Дата отчета (YYYY-MM-DD)
- * @return {Array} Массив значений для строки таблицы
- */
-function convertRecordToRow(record, reportDate) {
-  return [
-    reportDate, // Дата
-    record.rrd_id || '',
-    record.gi_id || '',
-    record.subject_name || '',
-    record.nm_id || '',
-    record.brand_name || '',
-    record.sa_name || '',
-    record.ts_name || '',
-    record.barcode || '',
-    record.doc_type_name || '',
-    record.quantity || '',
-    record.retail_price || '',
-    record.retail_amount || '',
-    record.sale_percent || '',
-    record.commission_percent || '',
-    record.office_name || '',
-    record.supplier_oper_name || '',
-    record.order_dt || '',
-    record.sale_dt || '',
-    record.rr_dt || '',
-    record.shk_id || '',
-    record.retail_price_withdisc_rub || '',
-    record.delivery_amount || '',
-    record.return_amount || '',
-    record.delivery_rub || '',
-    record.gi_box_type_name || '',
-    record.product_discount_for_report || '',
-    record.supplier_promo || '',
-    record.rid || '',
-    record.ppvz_spp_prc || '',
-    record.ppvz_kvw_prc_base || '',
-    record.ppvz_kvw_prc || '',
-    record.ppvz_sales_commission || '',
-    record.ppvz_for_pay || '',
-    record.ppvz_reward || '',
-    record.acquiring_fee || '',
-    record.acquiring_bank || '',
-    record.ppvz_vw || '',
-    record.ppvz_vw_nds || '',
-    record.ppvz_office_id || '',
-    record.ppvz_office_name || '',
-    record.ppvz_supplier_id || '',
-    record.ppvz_supplier_name || '',
-    record.ppvz_inn || '',
-    record.declaration_number || '',
-    record.bonus_type_name || '',
-    record.sticker_id || '',
-    record.site_country || '',
-    record.penalty || '',
-    record.additional_payment || '',
-    record.rebill_logistic_cost || '',
-    record.rebill_logistic_org || '',
-    record.kiz || '',
-    record.storage_fee || '',
-    record.deduction || '',
-    record.acceptance || '',
-    record.srid || ''
-  ];
-}
-
-/**
- * Основная функция для выгрузки ежедневных финансовых отчетов
- * Выгружает данные за предыдущий день с дозаписыванием
+ * Основная функция для синхронизации финансового отчета
+ * Выгружает данные за предыдущий день и записывает в таблицу
  */
 function syncFinanceDailyReport() {
   try {
-    Logger.log('=== Начало синхронизации ежедневных финансовых отчетов ===');
+    Logger.log('=== Начало синхронизации финансового отчета ===');
     
-    // Получаем дату предыдущего дня
+    // 1. Получаем период выгрузки (в данном случае за вчера)
     var dateRange = getPreviousDayRange();
     var reportDate = getPreviousDay();
     
-    Logger.log('Дата отчета: ' + reportDate);
     Logger.log('Период: ' + dateRange.dateFrom + ' - ' + dateRange.dateTo);
     
-    // Получаем лист
-    var sheetName = getFinanceDailySheetName();
-    var sheet = getOrCreateSheet(sheetName);
-    
-    // Устанавливаем заголовки если лист пуст
-    var headers = getFinanceDailyHeaders();
-    setSheetHeaders(sheet, headers);
-    
-    // Проверяем, не загружены ли уже данные за эту дату
-    if (dateExistsInSheet(sheet, reportDate, 1)) {
-      Logger.log('Данные за ' + reportDate + ' уже существуют в таблице. Пропускаем загрузку.');
-      return;
-    }
-    
-    // Загружаем данные из API
-    Logger.log('Загрузка данных из API Wildberries...');
+    // 2. Получаем данные из API
     var records = getReportDetailByPeriod(dateRange.dateFrom, dateRange.dateTo, 'daily');
     
     if (!records || records.length === 0) {
-      Logger.log('Нет данных для загрузки за ' + reportDate);
+      Logger.log('Нет данных для выгрузки за ' + reportDate);
       return;
     }
     
-    Logger.log('Получено записей из API: ' + records.length);
+    Logger.log('Получено записей: ' + records.length);
     
-    // Преобразуем данные в формат таблицы
-    var rows = [];
-    for (var i = 0; i < records.length; i++) {
-      var row = convertRecordToRow(records[i], reportDate);
-      rows.push(row);
+    // 3. Форматируем данные для таблицы
+    var formattedData = formatFinanceData(records);
+    
+    // 4. Записываем в таблицу
+    var sheetName = getFinanceDailySheetName();
+    var sheet = getOrCreateSheet(sheetName);
+    
+    var headers = getFinanceReportHeaders();
+    
+    // Если лист пустой - записываем с заголовками
+    if (isSheetEmpty(sheet)) {
+      clearAndWriteSheet(sheet, headers, formattedData);
+    } else {
+      // Если не пустой - дописываем в конец
+      appendDataToSheet(sheet, formattedData);
     }
     
-    // Записываем данные в таблицу
-    Logger.log('Запись данных в таблицу...');
-    appendDataToSheet(sheet, rows);
-    
-    Logger.log('=== Синхронизация завершена успешно. Добавлено строк: ' + rows.length + ' ===');
+    Logger.log('=== Синхронизация завершена успешно ===');
+    return records.length;
     
   } catch (error) {
-    Logger.log('ОШИБКА при синхронизации ежедневных финансовых отчетов: ' + error.toString());
-    Logger.log('Стек ошибки: ' + error.stack);
+    Logger.log('ОШИБКА в syncFinanceDailyReport: ' + error.toString());
+    Logger.log('Стек: ' + error.stack);
     throw error;
   }
+}
+
+/**
+ * Форматирует массив записей API в массив строк для таблицы согласно ТЗ
+ * @param {Array<Object>} records - Массив объектов из API
+ * @return {Array<Array>} Массив строк для Google Sheets
+ */
+function formatFinanceData(records) {
+  var data = [];
+  
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    var row = [
+      (i + 1),                              // 1. №
+      r.gi_id || '',                        // 2. Номер поставки
+      r.subject_name || '',                 // 3. Предмет
+      r.nm_id || '',                        // 4. Код номенклатуры
+      r.brand_name || '',                   // 5. Бренд
+      r.sa_name || '',                      // 6. Артикул поставщика
+      r.subject_name || '',                 // 7. Название (дублируем Предмет)
+      r.ts_name || '',                      // 8. Размер
+      r.barcode || '',                      // 9. Баркод
+      r.doc_type_name || '',                // 10. Тип документа
+      r.supplier_oper_name || '',           // 11. Обоснование для оплаты
+      r.order_dt || '',                     // 12. Дата заказа покупателем
+      r.sale_dt || '',                      // 13. Дата продажи
+      r.quantity || 0,                      // 14. Кол-во
+      r.retail_price || 0,                  // 15. Цена розничная
+      r.retail_amount || 0,                 // 16. Вайлдберриз реализовал Товар (Пр)
+      r.sale_percent || 0,                  // 17. Согласованный продуктовый дисконт, %
+      r.supplier_promo || 0,                // 18. Промокод %
+      r.product_discount_for_report || 0,   // 19. Итоговая согласованная скидка, %
+      r.retail_price_withdisc_rub || 0,     // 20. Цена розничная с учетом согласованной скидки
+      r.sup_rating_prc_up || 0,             // 21. Размер снижения кВВ из-за рейтинга, %
+      r.is_kgvp_v2 || 0,                    // 22. Размер снижения кВВ из-за акции, %
+      r.ppvz_spp_prc || 0,                  // 23. Скидка постоянного Покупателя (СПП), %
+      r.commission_percent || 0,            // 24. Размер кВВ, %
+      r.ppvz_kvw_prc_base || 0,             // 25. Размер кВВ без НДС, % Базовый
+      r.ppvz_kvw_prc || 0,                  // 26. Итоговый кВВ без НДС, %
+      r.ppvz_sales_commission || 0,         // 27. Вознаграждение с продаж до вычета услуг поверенного, без НДС
+      r.ppvz_reward || 0,                   // 28. Возмещение за выдачу и возврат товаров на ПВЗ
+      r.acquiring_fee || 0,                 // 29. Эквайринг/Комиссии за организацию платежей
+      r.acquiring_percent || 0,             // 30. Размер комиссии за эквайринг/Комиссии за организацию платежей, %
+      r.payment_processing || '',           // 31. Тип платежа за Эквайринг/Комиссии за организацию платежей
+      r.ppvz_vw || 0,                       // 32. Вознаграждение Вайлдберриз (ВВ), без НДС
+      r.ppvz_vw_nds || 0,                   // 33. НДС с Вознаграждения Вайлдберриз
+      r.ppvz_for_pay || 0,                  // 34. К перечислению Продавцу за реализованный Товар
+      r.delivery_amount || 0,               // 35. Количество доставок
+      r.return_amount || 0,                 // 36. Количество возврата
+      r.delivery_rub || 0,                  // 37. Услуги по доставке товара покупателю
+      r.fix_tariff_date_from || '',         // 38. Дата начала действия фиксации
+      r.fix_tariff_date_to || '',           // 39. Дата конца действия фиксации
+      r.srv_dbs !== undefined ? r.srv_dbs : '', // 40. Признак услуги платной доставки
+      r.penalty || 0,                       // 41. Общая сумма штрафов
+      r.additional_payment || 0,            // 42. Доплаты
+      r.bonus_type_name || '',              // 43. Виды логистики, штрафов и доплат
+      r.sticker_id || '',                   // 44. Стикер МП
+      r.acquiring_bank || '',               // 45. Наименование банка-эквайера
+      r.ppvz_office_id || '',               // 46. Номер офиса
+      r.ppvz_office_name || '',             // 47. Наименование офиса доставки
+      r.ppvz_inn || '',                     // 48. ИНН партнера
+      r.ppvz_supplier_name || '',           // 49. Партнер
+      r.office_name || '',                  // 50. Склад
+      r.site_country || '',                 // 51. Страна
+      r.gi_box_type_name || '',             // 52. Тип коробов
+      r.declaration_number || '',           // 53. Номер таможенной декларации
+      r.assembly_id || '',                  // 54. Номер сборочного задания
+      r.kiz || '',                          // 55. Код маркировки
+      r.shk_id || '',                       // 56. ШК
+      r.srid || '',                         // 57. Srid
+      r.rebill_logistic_cost || 0,          // 58. Возмещение издержек по перевозке/по складским операциям с товаром
+      r.rebill_logistic_org || '',          // 59. Организатор перевозки
+      r.storage_fee || 0,                   // 60. Хранение
+      r.deduction || 0,                     // 61. Удержания
+      r.acceptance || 0,                    // 62. Платная приемка
+      r.chrt_id || '',                      // 63. chrtId
+      r.dlv_prc || 0                        // 64. Фиксированный коэффициент склада по поставке
+    ];
+    data.push(row);
+  }
+  
+  return data;
+}
+
+/**
+ * Возвращает заголовки для финансового отчета
+ * @return {Array<string>} Массив заголовков
+ */
+function getFinanceReportHeaders() {
+  return [
+    "№", "Номер поставки", "Предмет", "Код номенклатуры", "Бренд", "Артикул поставщика", "Название", 
+    "Размер", "Баркод", "Тип документа", "Обоснование для оплаты", "Дата заказа покупателем", 
+    "Дата продажи", "Кол-во", "Цена розничная", "Вайлдберриз реализовал Товар (Пр)", 
+    "Согласованный продуктовый дисконт, %", "Промокод %", "Итоговая согласованная скидка, %", 
+    "Цена розничная с учетом согласованной скидки", "Размер снижения кВВ из-за рейтинга, %", 
+    "Размер снижения кВВ из-за акции, %", "Скидка постоянного Покупателя (СПП), %", "Размер кВВ, %", 
+    "Размер кВВ без НДС, % Базовый", "Итоговый кВВ без НДС, %", 
+    "Вознаграждение с продаж до вычета услуг поверенного, без НДС", 
+    "Возмещение за выдачу и возврат товаров на ПВЗ", "Эквайринг/Комиссии за организацию платежей", 
+    "Размер комиссии за эквайринг/Комиссии за организацию платежей, %", 
+    "Тип платежа за Эквайринг/Комиссии за организацию платежей", "Вознаграждение Вайлдберриз (ВВ), без НДС", 
+    "НДС с Вознаграждения Вайлдберриз", "К перечислению Продавцу за реализованный Товар", 
+    "Количество доставок", "Количество возврата", "Услуги по доставке товара покупателю", 
+    "Дата начала действия фиксации", "Дата конца действия фиксации", "Признак услуги платной доставки", 
+    "Общая сумма штрафов", "Доплаты", "Виды логистики, штрафов и доплат", "Стикер МП", 
+    "Наименование банка-эквайера", "Номер офиса", "Наименование офиса доставки", "ИНН партнера", 
+    "Партнер", "Склад", "Страна", "Тип коробов", "Номер таможенной декларации", "Номер сборочного задания", 
+    "Код маркировки", "ШК", "Srid", "Возмещение издержек по перевозке/по складским операциям с товаром", 
+    "Организатор перевозки", "Хранение", "Удержания", "Платная приемка", "chrtId", 
+    "Фиксированный коэффициент склада по поставке"
+  ];
 }
