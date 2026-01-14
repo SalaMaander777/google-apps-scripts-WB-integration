@@ -1,0 +1,156 @@
+---
+alwaysApply: true
+---
+## TOKENS & SECURITY
+- Wildberries API tokens must be stored ONLY in PropertiesService
+- Tokens must NEVER be hardcoded
+- AI must remind about token setup if missing
+
+Example:
+PropertiesService.getScriptProperties().getProperty('WB_API_TOKEN')
+
+---
+
+## WILDBERRIES API RULES
+- All HTTP requests must use UrlFetchApp.fetch
+- Headers must be explicitly defined:
+  - Authorization
+  - Content-Type: application/json
+- Each API call must:
+  - be wrapped in try/catch
+  - check HTTP response code
+  - log errors with Logger.log
+- API errors must not crash the whole script
+
+---
+
+## GOOGLE SHEETS RULES
+- Read data in bulk (getValues)
+- Write data in bulk (setValues)
+- Writing row-by-row in loops is FORBIDDEN
+- Always check if the sheet is empty before writing
+- Sheet structure is fixed and predefined
+
+---
+
+## PROJECT STRUCTURE (MANDATORY)
+Code must be logically separated into files:
+
+/Code.gs
+/config.gs
+/wbApi.gs
+/sheets.gs
+/dateUtils.gs
+/reports/
+  stocks.gs
+  financeDaily.gs
+  salesFunnel.gs
+  ordersFeed.gs
+  adsAnalytics.gs
+  adsCosts.gs
+
+Mixing logic from different reports in one file is FORBIDDEN.
+
+---
+
+## REPORT-SPECIFIC RULES
+
+### 1. STOCKS REPORT
+- Source: Wildberries API (warehouse stocks)
+- Frequency: once per day
+- Sheet behavior:
+  - fully clear sheet
+  - write fresh data
+- No historical data stored
+
+---
+
+### 2. DAILY FINANCIAL REPORT
+- Data period: strictly previous day
+- Append-only mode
+- Before append:
+  - check if data for this date already exists
+- Date is a unique key
+
+---
+
+### 3. SELLER ANALYTICS – SALES FUNNEL
+- Data period: previous day
+- Append-only
+- Duplicate dates are NOT allowed
+- No calculations in code (Sheets only)
+
+---
+
+### 4. ORDERS FEED
+- Data period: previous day
+- Append-only
+- Multiple rows per day allowed
+- Unique key: orderId (or API equivalent)
+
+---
+
+### 5. ADVERTISING ANALYTICS
+- Data period: previous day
+- Append-only
+- Unique key: campaignId + date
+- Must support mapping via ID-ART sheet
+
+---
+
+### 6. ADVERTISING COST HISTORY
+- Source: WB Seller → Advertising → Finance
+- Data period: strictly previous day
+- Append-only
+- Must handle delayed or partial API responses
+
+---
+
+### 7. ID-ART REFERENCE
+- Manual sheet
+- Read-only for scripts
+- Used only for article mapping and joins
+- Script must NOT modify this sheet
+
+---
+
+## TRIGGERS & SCHEDULING
+- All reports are executed via time-based triggers
+- One trigger = one report function
+- No single "mega runner" function allowed
+
+---
+#DOCUMENTATION
+- All documentation must save in directory /docs
+
+
+## ERROR HANDLING & STABILITY
+- Failure of one report must NOT affect others
+- All errors must be logged
+- No silent failures allowed
+
+---
+
+## STRICTLY FORBIDDEN FOR AI
+- Suggesting Node.js libraries
+- Using async/await
+- Writing business logic in Code.gs
+- Overengineering architecture
+- Modifying ID-ART sheet
+## === TECHNICAL SPECIFICATION ===
+The project requirements are defined in /docs/ТЗ.md
+
+AI MUST:
+- strictly follow all MUST / REQUIRED statements from the technical specification
+- treat the technical specification as a source of truth
+- prefer the technical specification over assumptions
+
+AI MUST NOT:
+- contradict the technical specification
+- invent requirements not stated in the document
+
+If a conflict between code and technical specification is detected,
+the technical specification has priority.
+# ===============================
+# END OF CURSOR RULES
+# ===============================
