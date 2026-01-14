@@ -5,10 +5,10 @@
 
 /**
  * Заголовки столбцов для листа "Остатки"
- * Первые столбцы фиксированные, затем идут столбцы с названиями складов
+ * Первые столбцы фиксированные, затем идут столбцы с названиями складов из API
  */
 function getStocksHeaders() {
-  // Базовые столбцы
+  // Базовые столбцы (склады будут добавлены динамически при получении данных)
   var baseHeaders = [
     'Бренд',
     'Предмет',
@@ -22,55 +22,31 @@ function getStocksHeaders() {
     'Всего находится на складах'
   ];
   
-  // Список складов (будет дополнен динамически при получении данных)
-  var warehouseHeaders = [
-    'Коледино',
-    'Подольск',
-    'Казань',
-    'Электросталь',
-    'Санкт-Петербург Уткина Заводь',
-    'Краснодар',
-    'Новосибирск',
-    'Екатеринбург - Испытателей 14г',
-    'Екатеринбург - Перспективный 12',
-    'Тула',
-    'Атакент',
-    'Белая дача',
-    'Невинномысск',
-    'Рязань (Тюшевское)',
-    'Котовск',
-    'Самара (Новосемейкино)',
-    'Волгоград',
-    'СЦ Барнаул',
-    'Актобе',
-    'Чашниково',
-    'Астана Карагандинское шоссе',
-    'Владимир',
-    'Сарапул',
-    'СПБ Шушары',
-    'Воронеж',
-    'Пенза',
-    'Остальные'
-  ];
-  
-  return baseHeaders.concat(warehouseHeaders);
+  return baseHeaders;
 }
 
 /**
  * Получить список всех уникальных складов из данных API
+ * Исключаем служебные "склады" (В пути..., Всего находится..., Остальные)
  * @param {Array<Object>} products - Массив товаров из API
  * @return {Array<string>} Массив названий складов
  */
 function extractWarehouseNames(products) {
   var warehouses = {};
+  var excludeNames = [
+    'В пути до получателей',
+    'В пути возвраты на склад WB',
+    'Всего находится на складах',
+    'Остальные'
+  ];
   
   for (var i = 0; i < products.length; i++) {
     var product = products[i];
-    if (product.offices && Array.isArray(product.offices)) {
-      for (var j = 0; j < product.offices.length; j++) {
-        var office = product.offices[j];
-        if (office.officeName) {
-          warehouses[office.officeName] = true;
+    if (product.warehouses && Array.isArray(product.warehouses)) {
+      for (var j = 0; j < product.warehouses.length; j++) {
+        var warehouse = product.warehouses[j];
+        if (warehouse.warehouseName && excludeNames.indexOf(warehouse.warehouseName) === -1) {
+          warehouses[warehouse.warehouseName] = true;
         }
       }
     }
@@ -86,48 +62,72 @@ function extractWarehouseNames(products) {
  * @return {Array} Массив значений для строки таблицы
  */
 function convertProductToRow(product, warehouseNames) {
+  // Создаем карту остатков по складам
+  var stockByWarehouse = {};
+  var toClientsCount = '';
+  var fromClientsCount = '';
+  var totalStock = '';
+  
+  if (product.warehouses && Array.isArray(product.warehouses)) {
+    for (var i = 0; i < product.warehouses.length; i++) {
+      var warehouse = product.warehouses[i];
+      if (warehouse.warehouseName && warehouse.quantity !== undefined && warehouse.quantity !== null) {
+        // Проверяем служебные "склады"
+        if (warehouse.warehouseName === 'В пути до получателей') {
+          toClientsCount = warehouse.quantity;
+        } else if (warehouse.warehouseName === 'В пути возвраты на склад WB') {
+          fromClientsCount = warehouse.quantity;
+        } else if (warehouse.warehouseName === 'Всего находится на складах') {
+          totalStock = warehouse.quantity;
+        } else {
+          // Обычный склад
+          stockByWarehouse[warehouse.warehouseName] = warehouse.quantity;
+        }
+      }
+    }
+  }
+  
   // Базовые данные товара
   var row = [
-    product.brandName || '', // Бренд
+    product.brand || '', // Бренд
     product.subjectName || '', // Предмет
-    product.supplierArticle || '', // Артикул продавца
+    product.vendorCode || '', // Артикул продавца
     product.nmId || '', // Артикул WB
     product.volume || '', // Объем, л
     product.barcode || '', // Баркод
     product.techSize || '', // Размер вещи
-    product.metrics ? (product.metrics.toClientCount || 0) : 0, // В пути до получателей
-    product.metrics ? (product.metrics.fromClientCount || 0) : 0, // В пути возвраты на склад WB
-    product.metrics ? (product.metrics.stockCount || 0) : 0 // Всего находится на складах
+    toClientsCount, // В пути до получателей
+    fromClientsCount, // В пути возвраты на склад WB
+    totalStock // Всего находится на складах
   ];
-  
-  // Создаем карту остатков по складам
-  var stockByWarehouse = {};
-  var otherStock = 0; // Остатки на складах, не входящих в основной список
-  
-  if (product.offices && Array.isArray(product.offices)) {
-    for (var i = 0; i < product.offices.length; i++) {
-      var office = product.offices[i];
-      if (office.officeName && office.metrics) {
-        var stock = office.metrics.stockCount || 0;
-        stockByWarehouse[office.officeName] = stock;
-      }
-    }
-  }
   
   // Добавляем остатки по каждому складу в порядке столбцов
   for (var j = 0; j < warehouseNames.length; j++) {
     var warehouseName = warehouseNames[j];
     if (warehouseName === 'Остальные') {
       // Для столбца "Остальные" суммируем остатки со всех складов, не входящих в основной список
-      var totalStock = product.metrics ? (product.metrics.stockCount || 0) : 0;
-      var knownStock = 0;
-      for (var k = 0; k < warehouseNames.length - 1; k++) {
-        knownStock += stockByWarehouse[warehouseNames[k]] || 0;
+      if (totalStock !== '' && typeof totalStock === 'number') {
+        var knownStock = 0;
+        for (var k = 0; k < warehouseNames.length - 1; k++) {
+          var knownWarehouseStock = stockByWarehouse[warehouseNames[k]];
+          if (knownWarehouseStock !== undefined && knownWarehouseStock !== null) {
+            knownStock += knownWarehouseStock;
+          }
+        }
+        var otherStock = Math.max(0, totalStock - knownStock);
+        // Если otherStock > 0, записываем значение, иначе пустое место
+        row.push(otherStock > 0 ? otherStock : '');
+      } else {
+        row.push('');
       }
-      otherStock = Math.max(0, totalStock - knownStock);
-      row.push(otherStock);
     } else {
-      row.push(stockByWarehouse[warehouseName] || 0);
+      // Если для склада есть остаток (включая 0), записываем его
+      // Если остатка нет, записываем пустое место
+      if (stockByWarehouse.hasOwnProperty(warehouseName)) {
+        row.push(stockByWarehouse[warehouseName]);
+      } else {
+        row.push('');
+      }
     }
   }
   
@@ -153,15 +153,38 @@ function syncStocks() {
       limit: 1000
     });
     
-    if (!response || !response.data || !response.data.products || response.data.products.length === 0) {
-      Logger.log('Нет данных об остатках для загрузки');
+    // Логируем структуру ответа для отладки
+    if (response) {
+      Logger.log('Структура ответа: ' + JSON.stringify(Object.keys(response)));
+      if (response.data) {
+        Logger.log('Ключи в data: ' + JSON.stringify(Object.keys(response.data)));
+        if (response.data.products) {
+          Logger.log('Количество products: ' + response.data.products.length);
+          if (response.data.products.length > 0) {
+            Logger.log('Пример первого товара (первые 500 символов): ' + JSON.stringify(response.data.products[0]).substring(0, 500));
+          }
+        }
+      }
+    }
+    
+    if (!response || !response.data) {
+      Logger.log('Нет данных в ответе API. Ответ: ' + JSON.stringify(response));
+      var headers = getStocksHeaders();
+      clearAndWriteSheet(sheet, headers, []);
+      return;
+    }
+    
+    // Проверяем разные возможные структуры ответа
+    var products = response.data.products || response.data.items || [];
+    
+    if (!products || products.length === 0) {
+      Logger.log('Нет данных об остатках для загрузки. Структура ответа: ' + JSON.stringify(response.data));
       // Очищаем лист и оставляем только заголовки
       var headers = getStocksHeaders();
       clearAndWriteSheet(sheet, headers, []);
       return;
     }
     
-    var products = response.data.products;
     Logger.log('Получено товаров из API: ' + products.length);
     
     // Извлекаем список всех складов из данных
@@ -182,67 +205,52 @@ function syncStocks() {
       'Всего находится на складах'
     ];
     
-    // Добавляем склады из данных, затем стандартные склады, которых нет в данных
-    var standardWarehouses = [
-      'Коледино',
-      'Подольск',
-      'Казань',
-      'Электросталь',
-      'Санкт-Петербург Уткина Заводь',
-      'Краснодар',
-      'Новосибирск',
-      'Екатеринбург - Испытателей 14г',
-      'Екатеринбург - Перспективный 12',
-      'Тула',
-      'Атакент',
-      'Белая дача',
-      'Невинномысск',
-      'Рязань (Тюшевское)',
-      'Котовск',
-      'Самара (Новосемейкино)',
-      'Волгоград',
-      'СЦ Барнаул',
-      'Актобе',
-      'Чашниково',
-      'Астана Карагандинское шоссе',
-      'Владимир',
-      'Сарапул',
-      'СПБ Шушары',
-      'Воронеж',
-      'Пенза',
-      'Остальные'
-    ];
-    
-    // Объединяем склады: сначала стандартные, затем остальные из данных
-    var allWarehouses = [];
-    var warehouseSet = {};
-    
-    // Добавляем стандартные склады
-    for (var i = 0; i < standardWarehouses.length; i++) {
-      allWarehouses.push(standardWarehouses[i]);
-      warehouseSet[standardWarehouses[i]] = true;
-    }
-    
-    // Добавляем склады из данных, которых нет в стандартном списке
-    for (var j = 0; j < warehouseNames.length; j++) {
-      if (!warehouseSet[warehouseNames[j]]) {
-        allWarehouses.push(warehouseNames[j]);
-        warehouseSet[warehouseNames[j]] = true;
-      }
-    }
+    // Используем склады из API данных + добавляем "Остальные" в конце
+    var allWarehouses = warehouseNames.slice(); // Копируем массив
+    allWarehouses.push('Остальные');
     
     var headers = baseHeaders.concat(allWarehouses);
     
     // Преобразуем данные в формат таблицы
     var rows = [];
+    Logger.log('Начало преобразования ' + products.length + ' товаров в строки таблицы...');
+    
     for (var k = 0; k < products.length; k++) {
-      var row = convertProductToRow(products[k], allWarehouses);
-      rows.push(row);
+      try {
+        var row = convertProductToRow(products[k], allWarehouses);
+        if (row && row.length > 0) {
+          rows.push(row);
+        } else {
+          Logger.log('Предупреждение: товар ' + k + ' не преобразован в строку. Данные: ' + JSON.stringify(products[k]).substring(0, 200));
+        }
+      } catch (e) {
+        Logger.log('Ошибка преобразования товара ' + k + ': ' + e.toString());
+        Logger.log('Данные товара: ' + JSON.stringify(products[k]).substring(0, 300));
+      }
+    }
+    
+    Logger.log('Преобразовано строк для записи: ' + rows.length);
+    
+    if (rows.length > 0) {
+      Logger.log('Пример первой строки (первые 15 значений): ' + JSON.stringify(rows[0].slice(0, 15)));
+      Logger.log('Количество столбцов в первой строке: ' + rows[0].length);
+      Logger.log('Количество столбцов в заголовках: ' + headers.length);
+      
+      // Проверяем соответствие количества столбцов
+      if (rows[0].length !== headers.length) {
+        Logger.log('ВНИМАНИЕ: Несоответствие количества столбцов! Заголовков: ' + headers.length + ', в строке: ' + rows[0].length);
+      }
     }
     
     // Полностью перезаписываем лист
     Logger.log('Запись данных в таблицу (полная перезапись)...');
-    clearAndWriteSheet(sheet, headers, rows);
+    if (rows.length > 0) {
+      clearAndWriteSheet(sheet, headers, rows);
+    } else {
+      Logger.log('ВНИМАНИЕ: Нет строк для записи! Проверьте структуру данных API.');
+      // Оставляем только заголовки
+      clearAndWriteSheet(sheet, headers, []);
+    }
     
     Logger.log('=== Синхронизация завершена успешно. Записано товаров: ' + rows.length + ' ===');
     

@@ -131,22 +131,47 @@ function dateExistsInSheet(sheet, dateStr, dateColumnIndex) {
  * @param {Array<Array>} data - Данные для записи
  */
 function clearAndWriteSheet(sheet, headers, data) {
+  Logger.log('clearAndWriteSheet: заголовков=' + (headers ? headers.length : 0) + ', строк данных=' + (data ? data.length : 0));
+  
   // Очищаем весь лист
   sheet.clear();
+  Logger.log('Лист очищен');
   
   // Записываем заголовки
   if (headers && headers.length > 0) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    // Форматирование заголовков
-    var headerRange = sheet.getRange(1, 1, 1, headers.length);
-    headerRange.setFontWeight('bold');
-    headerRange.setBackground('#e0e0e0');
+    try {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      Logger.log('Заголовки записаны: ' + headers.length + ' столбцов');
+      
+      // Форматирование заголовков
+      var headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setFontWeight('bold');
+      headerRange.setBackground('#e0e0e0');
+    } catch (e) {
+      Logger.log('Ошибка записи заголовков: ' + e.toString());
+      throw e;
+    }
   }
   
   // Записываем данные
   if (data && data.length > 0) {
-    var startRow = headers && headers.length > 0 ? 2 : 1;
-    sheet.getRange(startRow, 1, data.length, data[0].length).setValues(data);
-    Logger.log('Записано строк: ' + data.length);
+    try {
+      var startRow = headers && headers.length > 0 ? 2 : 1;
+      var numCols = data[0] ? data[0].length : 0;
+      Logger.log('Запись данных: строка начала=' + startRow + ', строк=' + data.length + ', столбцов=' + numCols);
+      
+      if (numCols > 0) {
+        sheet.getRange(startRow, 1, data.length, numCols).setValues(data);
+        Logger.log('Данные записаны успешно: ' + data.length + ' строк');
+      } else {
+        Logger.log('ОШИБКА: Первая строка данных пустая!');
+      }
+    } catch (e) {
+      Logger.log('Ошибка записи данных: ' + e.toString());
+      Logger.log('Стек ошибки: ' + e.stack);
+      throw e;
+    }
+  } else {
+    Logger.log('Нет данных для записи');
   }
 }

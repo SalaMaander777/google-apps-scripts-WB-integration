@@ -228,74 +228,221 @@ function getOrders(dateFrom, flag) {
 
 /**
  * Получить остатки товаров по складам
- * Использует endpoint /api/v2/stocks-report/products/products для получения данных по товарам
- * @param {Object} options - Опции запроса
- * @param {Array<number>} options.nmIDs - Список артикулов WB для фильтрации (опционально)
- * @param {string} options.stockType - Тип складов: "" (все), "wb" (склады WB), "mp" (склады продавца)
- * @param {number} options.limit - Лимит записей (по умолчанию 1000, максимум 1000)
+ * Использует новый трёхэтапный API:
+ * 1. Создание задания на генерацию отчёта
+ * 2. Проверка статуса задания
+ * 3. Получение готового отчёта
+ * @param {Object} options - Опции запроса (для совместимости, не используются)
  * @return {Object} Ответ API с данными по остаткам
  */
 function getStocksReport(options) {
   options = options || {};
-  var url = 'https://seller-analytics-api.wildberries.ru/api/v2/stocks-report/products/products';
   
-  // Получаем текущую дату для периода
-  var today = new Date();
-  var todayStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  Logger.log('=== Начало процесса получения отчёта об остатках ===');
   
-  var payload = {
-    currentPeriod: {
-      start: todayStr,
-      end: todayStr
-    },
-    stockType: options.stockType || '',
-    skipDeletedNm: true,
-    limit: options.limit || 1000,
-    offset: 0
-  };
-  
-  // Добавляем фильтры если указаны
-  if (options.nmIDs && options.nmIDs.length > 0) {
-    payload.nmIDs = options.nmIDs;
+  // Шаг 1: Создать задание на генерацию отчёта
+  var taskId = createWarehouseRemainsTask();
+  if (!taskId) {
+    throw new Error('Не удалось создать задание на генерацию отчёта');
   }
   
-  Logger.log('Загрузка остатков товаров...');
+  Logger.log('Создано задание с ID: ' + taskId);
   
-  var allProducts = [];
-  var offset = 0;
+  // Шаг 2: Ждём готовности отчёта
+  var maxAttempts = 60; // Максимум 10 минут ожидания (60 попыток по 10 секунд)
+  var attempt = 0;
+  var status = '';
   
-  while (true) {
-    try {
-      payload.offset = offset;
-      var response = fetchWBAPIPost(url, payload);
-      
-      if (!response || !response.data || !response.data.products || response.data.products.length === 0) {
-        Logger.log('Получены все данные. Всего товаров: ' + allProducts.length);
-        break;
-      }
-      
-      allProducts = allProducts.concat(response.data.products);
-      Logger.log('Загружено товаров в этой итерации: ' + response.data.products.length + ', всего: ' + allProducts.length);
-      
-      // Если получено меньше лимита, значит это последняя страница
-      if (response.data.products.length < payload.limit) {
-        break;
-      }
-      
-      offset += payload.limit;
-      
-      // Задержка для соблюдения лимитов API (3 запроса в минуту, интервал 20 секунд)
-      Utilities.sleep(21000); // 21 секунда
-      
-    } catch (error) {
-      Logger.log('Ошибка при загрузке остатков: ' + error.toString());
-      throw error;
+  while (attempt < maxAttempts) {
+    attempt++;
+    Logger.log('Проверка статуса, попытка ' + attempt + ' из ' + maxAttempts);
+    
+    status = checkWarehouseRemainsTaskStatus(taskId);
+    Logger.log('Статус задания: ' + status);
+    
+    if (status === 'done') {
+      Logger.log('Отчёт готов!');
+      break;
+    } else if (status === 'canceled' || status === 'purged') {
+      throw new Error('Задание отклонено или удалено. Статус: ' + status);
+    }
+    
+    // Если отчёт ещё не готов, ждём 10 секунд
+    if (attempt < maxAttempts) {
+      Logger.log('Отчёт ещё не готов, ждём 10 секунд...');
+      Utilities.sleep(10000); // 10 секунд
     }
   }
+  
+  if (status !== 'done') {
+    throw new Error('Превышено время ожидания готовности отчёта. Последний статус: ' + status);
+  }
+  
+  // Шаг 3: Получить готовый отчёт
+  Logger.log('Загрузка готового отчёта...');
+  var products = downloadWarehouseRemainsReport(taskId);
+  
+  Logger.log('Загружено товаров: ' + (products ? products.length : 0));
   
   return {
     data: {
-      products: allProducts
+      products: products || []
     }
   };
+}
+
+/**
+ * Создать задание на генерацию отчёта об остатках
+ * @return {string} ID задания
+ */
+function createWarehouseRemainsTask() {
+  var url = 'https://seller-analytics-api.wildberries.ru/api/v1/warehouse_remains';
+  var token = getWBApiToken();
+  
+  // Параметры запроса - все группировки включены
+  var params = {
+    locale: 'ru',
+    groupByBrand: true,
+    groupBySubject: true,
+    groupBySa: true,
+    groupByNm: true,
+    groupByBarcode: true,
+    groupBySize: true
+  };
+  
+  // Формируем URL с параметрами
+  var queryString = Object.keys(params).map(function(key) {
+    return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+  }).join('&');
+  
+  var fullUrl = url + '?' + queryString;
+  
+  try {
+    var response = UrlFetchApp.fetch(fullUrl, {
+      method: 'get',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      muteHttpExceptions: true
+    });
+    
+    var statusCode = response.getResponseCode();
+    
+    if (statusCode !== 200) {
+      var errorText = response.getContentText();
+      Logger.log('Ошибка создания задания: ' + statusCode + ' - ' + errorText);
+      throw new Error('Ошибка создания задания: ' + statusCode + ' - ' + errorText);
+    }
+    
+    var responseText = response.getContentText();
+    var result = JSON.parse(responseText);
+    
+    if (!result || !result.data || !result.data.taskId) {
+      Logger.log('Неверная структура ответа: ' + responseText);
+      throw new Error('Не удалось получить ID задания из ответа API');
+    }
+    
+    return result.data.taskId;
+    
+  } catch (error) {
+    Logger.log('Ошибка при создании задания: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Проверить статус задания на генерацию отчёта
+ * @param {string} taskId - ID задания
+ * @return {string} Статус задания (new, processing, done, purged, canceled)
+ */
+function checkWarehouseRemainsTaskStatus(taskId) {
+  var url = 'https://seller-analytics-api.wildberries.ru/api/v1/warehouse_remains/tasks/' + taskId + '/status';
+  var token = getWBApiToken();
+  
+  try {
+    var response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      muteHttpExceptions: true
+    });
+    
+    var statusCode = response.getResponseCode();
+    
+    if (statusCode !== 200) {
+      var errorText = response.getContentText();
+      Logger.log('Ошибка проверки статуса: ' + statusCode + ' - ' + errorText);
+      throw new Error('Ошибка проверки статуса: ' + statusCode + ' - ' + errorText);
+    }
+    
+    var responseText = response.getContentText();
+    var result = JSON.parse(responseText);
+    
+    if (!result || !result.data || !result.data.status) {
+      Logger.log('Неверная структура ответа: ' + responseText);
+      throw new Error('Не удалось получить статус задания из ответа API');
+    }
+    
+    return result.data.status;
+    
+  } catch (error) {
+    Logger.log('Ошибка при проверке статуса: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Получить готовый отчёт об остатках
+ * @param {string} taskId - ID задания
+ * @return {Array<Object>} Массив товаров с остатками
+ */
+function downloadWarehouseRemainsReport(taskId) {
+  var url = 'https://seller-analytics-api.wildberries.ru/api/v1/warehouse_remains/tasks/' + taskId + '/download';
+  var token = getWBApiToken();
+  
+  try {
+    var response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      muteHttpExceptions: true
+    });
+    
+    var statusCode = response.getResponseCode();
+    
+    if (statusCode === 204) {
+      Logger.log('API вернул 204 - нет данных');
+      return [];
+    }
+    
+    if (statusCode !== 200) {
+      var errorText = response.getContentText();
+      Logger.log('Ошибка загрузки отчёта: ' + statusCode + ' - ' + errorText);
+      throw new Error('Ошибка загрузки отчёта: ' + statusCode + ' - ' + errorText);
+    }
+    
+    var responseText = response.getContentText();
+    if (!responseText) {
+      return [];
+    }
+    
+    var products = JSON.parse(responseText);
+    
+    // API возвращает массив напрямую
+    if (!Array.isArray(products)) {
+      Logger.log('Неожиданная структура ответа, ожидался массив: ' + responseText.substring(0, 200));
+      return [];
+    }
+    
+    return products;
+    
+  } catch (error) {
+    Logger.log('Ошибка при загрузке отчёта: ' + error.toString());
+    throw error;
+  }
 }
