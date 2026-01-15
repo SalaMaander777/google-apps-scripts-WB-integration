@@ -15,6 +15,9 @@ function onOpen() {
     .addItem('Синхронизация остатков', 'manualStocksSync')
     .addItem('Синхронизация финансовых отчетов', 'manualFinanceDailySync')
     .addItem('Синхронизация ленты заказов', 'manualOrdersFeedSync')
+    .addItem('Синхронизация воронки продаж', 'manualSalesFunnelSync')
+    .addItem('Синхронизация аналитики РК', 'manualAdsAnalyticsSync')
+    .addItem('Синхронизация истории рекламных расходов', 'manualAdsCostsSync')
     .addToUi();
 }
 
@@ -146,4 +149,67 @@ function runStocksSync() {
  */
 function manualStocksSync() {
   syncStocks();
+}
+
+/**
+ * Функция для запуска синхронизации воронки продаж
+ * Вызывается по триггеру ежедневно
+ */
+function runSalesFunnelSync() {
+  try {
+    syncSalesFunnel();
+  } catch (error) {
+    Logger.log('Критическая ошибка в runSalesFunnelSync: ' + error.toString());
+    // Не пробрасываем ошибку дальше, чтобы не ломать другие триггеры
+  }
+}
+
+/**
+ * Функция для ручного запуска синхронизации воронки продаж
+ * Можно вызвать из меню или вручную
+ */
+function manualSalesFunnelSync() {
+  syncSalesFunnel();
+}
+
+/**
+ * Функция для запуска синхронизации аналитики рекламных кампаний
+ * Вызывается по триггеру ежедневно
+ */
+function runAdsAnalyticsSync() {
+  try {
+    syncAdsAnalytics();
+  } catch (error) {
+    Logger.log('Критическая ошибка в runAdsAnalyticsSync: ' + error.toString());
+    // Не пробрасываем ошибку дальше, чтобы не ломать другие триггеры
+  }
+}
+
+/**
+ * Функция для ручного запуска синхронизации аналитики РК
+ * Можно вызвать из меню или вручную
+ */
+function manualAdsAnalyticsSync() {
+  syncAdsAnalytics();
+}
+
+/**
+ * Функция для запуска синхронизации истории рекламных расходов
+ * Вызывается по триггеру ежедневно
+ */
+function runAdsCostsSync() {
+  try {
+    syncAdsCosts();
+  } catch (error) {
+    Logger.log('Критическая ошибка в runAdsCostsSync: ' + error.toString());
+    // Не пробрасываем ошибку дальше, чтобы не ломать другие триггеры
+  }
+}
+
+/**
+ * Функция для ручного запуска синхронизации истории рекламных расходов
+ * Можно вызвать из меню или вручную
+ */
+function manualAdsCostsSync() {
+  syncAdsCosts();
 }

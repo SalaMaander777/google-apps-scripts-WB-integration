@@ -446,3 +446,136 @@ function downloadWarehouseRemainsReport(taskId) {
     throw error;
   }
 }
+
+/**
+ * Получить список рекламных кампаний
+ * @param {Object} options - Опции запроса
+ * @param {string} options.ids - ID кампаний через запятую (максимум 50), опционально
+ * @param {string} options.statuses - Статусы кампаний через запятую (опционально)
+ * @param {string} options.payment_type - Тип оплаты: cpm или cpc (опционально)
+ * @return {Array<Object>} Массив кампаний
+ */
+function getAdverts(options) {
+  options = options || {};
+  var url = 'https://advert-api.wildberries.ru/api/advert/v2/adverts';
+  
+  var params = {};
+  if (options.ids) params.ids = options.ids;
+  if (options.statuses) params.statuses = options.statuses;
+  if (options.payment_type) params.payment_type = options.payment_type;
+  
+  try {
+    var response = fetchWBAPI(url, params);
+    
+    if (!response) {
+      Logger.log('Нет рекламных кампаний');
+      return [];
+    }
+    
+    // API возвращает объект с полем adverts
+    if (response.adverts && Array.isArray(response.adverts)) {
+      Logger.log('Получено кампаний: ' + response.adverts.length);
+      return response.adverts;
+    }
+    
+    Logger.log('Неожиданная структура ответа getAdverts');
+    return [];
+    
+  } catch (error) {
+    Logger.log('Ошибка при получении списка кампаний: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Получить полную статистику по рекламным кампаниям
+ * @param {Array<number>} advertIds - Массив ID кампаний (максимум 50)
+ * @param {string} beginDate - Дата начала в формате YYYY-MM-DD
+ * @param {string} endDate - Дата конца в формате YYYY-MM-DD
+ * @return {Array<Object>} Массив статистики по кампаниям
+ */
+function getAdvertFullStats(advertIds, beginDate, endDate) {
+  if (!advertIds || advertIds.length === 0) {
+    Logger.log('Нет ID кампаний для получения статистики');
+    return [];
+  }
+  
+  // API лимит - максимум 50 ID за раз
+  if (advertIds.length > 50) {
+    Logger.log('ПРЕДУПРЕЖДЕНИЕ: передано больше 50 ID кампаний, обрабатываем только первые 50');
+    advertIds = advertIds.slice(0, 50);
+  }
+  
+  var url = 'https://advert-api.wildberries.ru/adv/v3/fullstats';
+  
+  var params = {
+    ids: advertIds.join(','),
+    beginDate: beginDate,
+    endDate: endDate
+  };
+  
+  try {
+    var response = fetchWBAPI(url, params);
+    
+    if (!response) {
+      Logger.log('Нет статистики по кампаниям');
+      return [];
+    }
+    
+    // API возвращает массив напрямую
+    if (Array.isArray(response)) {
+      Logger.log('Получено статистик: ' + response.length);
+      return response;
+    }
+    
+    Logger.log('Неожиданная структура ответа getAdvertFullStats');
+    return [];
+    
+  } catch (error) {
+    Logger.log('Ошибка при получении статистики кампаний: ' + error.toString());
+    // Для соблюдения лимитов API (3 запроса в минуту) не бросаем ошибку, возвращаем пустой массив
+    Logger.log('Возвращаем пустой массив статистики');
+    return [];
+  }
+}
+
+/**
+ * Получить историю затрат на рекламные кампании за период
+ * @param {string} fromDate - Дата начала в формате YYYY-MM-DD
+ * @param {string} toDate - Дата конца в формате YYYY-MM-DD (минимум 1 день, максимум 31 день)
+ * @return {Array<Object>} Массив истории затрат
+ */
+function getAdvertCostsHistory(fromDate, toDate) {
+  if (!fromDate || !toDate) {
+    throw new Error('Необходимо указать даты начала и конца периода');
+  }
+  
+  var url = 'https://advert-api.wildberries.ru/adv/v1/upd';
+  
+  var params = {
+    from: fromDate,
+    to: toDate
+  };
+  
+  try {
+    var response = fetchWBAPI(url, params);
+    
+    if (!response) {
+      Logger.log('Нет данных по затратам на рекламу');
+      return [];
+    }
+    
+    // API возвращает массив напрямую
+    if (Array.isArray(response)) {
+      Logger.log('Получено записей затрат: ' + response.length);
+      return response;
+    }
+    
+    Logger.log('Неожиданная структура ответа getAdvertCostsHistory');
+    return [];
+    
+  } catch (error) {
+    Logger.log('Ошибка при получении истории затрат: ' + error.toString());
+    throw error;
+  }
+}

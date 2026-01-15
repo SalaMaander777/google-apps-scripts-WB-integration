@@ -54,6 +54,30 @@ function getStocksSheetName() {
 }
 
 /**
+ * Получить имя листа для аналитики продавца (воронка продаж)
+ * @return {string} Имя листа
+ */
+function getSalesFunnelSheetName() {
+  return 'Аналитика продавца';
+}
+
+/**
+ * Получить имя листа для аналитики рекламных кампаний
+ * @return {string} Имя листа
+ */
+function getAdsAnalyticsSheetName() {
+  return 'Аналитика РК';
+}
+
+/**
+ * Получить имя листа для истории рекламных расходов
+ * @return {string} Имя листа
+ */
+function getAdsCostsSheetName() {
+  return 'История рекламных расходов';
+}
+
+/**
  * Получить Google Таблицу
  * @return {Spreadsheet} Объект таблицы
  */
