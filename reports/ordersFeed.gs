@@ -8,6 +8,7 @@
  */
 function getOrdersFeedHeaders() {
   return [
+    '', // Пустой первый столбец
     '№ позиции',
     'Баркод',
     'Наименование товара',
@@ -17,7 +18,9 @@ function getOrdersFeedHeaders() {
     'Цена',
     'Склад отправки',
     'Регион доставки',
+    'Дата заказа',
     'Время заказа',
+    'Статус',
     'Обновление',
     'КОЛ_ВО'
   ];
@@ -46,7 +49,36 @@ function convertOrderToRow(order, rowNumber) {
     productName = order.category;
   }
   
+  // Разбиваем дату заказа на дату и время
+  var orderDate = '';
+  var orderTime = '';
+  if (order.date) {
+    var dateObj = new Date(order.date);
+    if (!isNaN(dateObj.getTime())) {
+      orderDate = Utilities.formatDate(dateObj, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      orderTime = Utilities.formatDate(dateObj, Session.getScriptTimeZone(), 'HH:mm:ss');
+    }
+  }
+  
+  // Форматируем дату и время обновления в одну строку
+  var updateDateTime = '';
+  if (order.lastChangeDate) {
+    var updateDateObj = new Date(order.lastChangeDate);
+    if (!isNaN(updateDateObj.getTime())) {
+      updateDateTime = Utilities.formatDate(updateDateObj, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+    }
+  }
+  
+  // Определяем статус заказа
+  var status = '';
+  if (order.isCancel === true || order.cancel_dt) {
+    status = 'отменен';
+  } else {
+    status = 'активен';
+  }
+  
   return [
+    '', // Пустой первый столбец
     rowNumber, // № позиции
     order.barcode || '',
     productName || '', // Наименование товара
@@ -56,9 +88,11 @@ function convertOrderToRow(order, rowNumber) {
     order.finishedPrice || order.priceWithDisc || '', // Цена
     order.warehouseName || '', // Склад отправки
     order.regionName || '', // Регион доставки
-    order.date || '', // Время заказа
-    order.lastChangeDate || '', // Обновление
-    1 // КОЛ_ВО (всегда 1, так как 1 строка = 1 заказ)
+    orderDate, // Дата заказа
+    orderTime, // Время заказа
+    status, // Статус
+    updateDateTime, // Обновление (дата и время)
+    '' // КОЛ_ВО - будет формулой
   ];
 }
 
@@ -81,9 +115,24 @@ function syncOrdersFeed() {
     var sheetName = getOrdersFeedSheetName();
     var sheet = getOrCreateSheet(sheetName);
     
-    // Устанавливаем заголовки если лист пуст
-    var headers = getOrdersFeedHeaders();
-    setSheetHeaders(sheet, headers);
+    // Инициализация структуры листа если он пуст
+    var lastRow = sheet.getLastRow();
+    if (lastRow === 0) {
+      // Добавляем пустую строку в строке 1
+      sheet.getRange(1, 1).setValue('');
+      
+      // Устанавливаем заголовки в строке 2
+      var headers = getOrdersFeedHeaders();
+      sheet.getRange(2, 1, 1, headers.length).setValues([headers]);
+      
+      // Форматирование заголовков
+      var headerRange = sheet.getRange(2, 1, 1, headers.length);
+      headerRange.setFontWeight('bold');
+      headerRange.setBackground('#e0e0e0');
+      
+      Logger.log('Создана структура листа с пустой строкой и заголовками');
+      lastRow = 2;
+    }
     
     // Загружаем данные из API
     // Используем flag=1 для получения всех заказов за дату
@@ -98,12 +147,13 @@ function syncOrdersFeed() {
     Logger.log('Получено заказов из API: ' + orders.length);
     
     // Получаем текущий номер последней позиции в таблице
-    var lastRow = sheet.getLastRow();
     var startRowNumber = 1;
     
     // Если в таблице уже есть данные, находим максимальный номер позиции
-    if (lastRow > 1) {
-      var positionColumn = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    // Данные начинаются со строки 3 (1 - пустая, 2 - заголовки)
+    // Номер позиции находится во 2-м столбце (B)
+    if (lastRow > 2) {
+      var positionColumn = sheet.getRange(3, 2, lastRow - 2, 1).getValues();
       var maxPosition = 0;
       for (var j = 0; j < positionColumn.length; j++) {
         var posValue = positionColumn[j][0];
@@ -124,7 +174,17 @@ function syncOrdersFeed() {
     
     // Записываем данные в таблицу
     Logger.log('Запись данных в таблицу...');
-    appendDataToSheet(sheet, rows);
+    var startRow = lastRow + 1;
+    sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
+    
+    // Добавляем формулы в столбец КОЛ_ВО (15-й столбец, O)
+    // Статус находится в 13-м столбце (M)
+    Logger.log('Добавление формул в столбец КОЛ_ВО...');
+    for (var i = 0; i < rows.length; i++) {
+      var currentRow = startRow + i;
+      var formula = '=IF(M' + currentRow + '="отменен",0,1)';
+      sheet.getRange(currentRow, 15).setFormula(formula);
+    }
     
     Logger.log('=== Синхронизация завершена успешно. Добавлено заказов: ' + rows.length + ' ===');
     

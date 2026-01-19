@@ -55,3 +55,44 @@ function parseDate(dateStr) {
   }
   return new Date(dateStr);
 }
+
+/**
+ * Получить дату год назад от указанной даты
+ * @param {string} dateStr - Дата в формате YYYY-MM-DD
+ * @return {string} Дата год назад в формате YYYY-MM-DD
+ */
+function getDateYearAgo(dateStr) {
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) {
+    throw new Error('Неверный формат даты. Ожидается YYYY-MM-DD');
+  }
+  
+  var year = parseInt(parts[0], 10);
+  var month = parts[1];
+  var day = parts[2];
+  
+  // Вычитаем один год
+  var yearAgo = year - 1;
+  
+  return yearAgo + '-' + month + '-' + day;
+}
+
+/**
+ * Форматировать дату в русский формат DD.MM.YYYY
+ * @param {string} dateStr - Дата в формате YYYY-MM-DD
+ * @return {string} Дата в формате DD.MM.YYYY
+ */
+function formatDateRu(dateStr) {
+  if (!dateStr) return '';
+  
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) {
+    return dateStr;
+  }
+  
+  var year = parts[0];
+  var month = parts[1];
+  var day = parts[2];
+  
+  return day + '.' + month + '.' + year;
+}

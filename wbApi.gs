@@ -579,3 +579,100 @@ function getAdvertCostsHistory(fromDate, toDate) {
     throw error;
   }
 }
+
+/**
+ * Получить статистику карточек товаров (воронка продаж) с пагинацией
+ * @param {string} selectedStart - Дата начала запрашиваемого периода в формате YYYY-MM-DD
+ * @param {string} selectedEnd - Дата конца запрашиваемого периода в формате YYYY-MM-DD
+ * @param {string} pastStart - Дата начала периода для сравнения в формате YYYY-MM-DD
+ * @param {string} pastEnd - Дата конца периода для сравнения в формате YYYY-MM-DD
+ * @return {Array<Object>} Массив товаров со статистикой
+ */
+function getSalesFunnelData(selectedStart, selectedEnd, pastStart, pastEnd) {
+  if (!selectedStart || !selectedEnd) {
+    throw new Error('Необходимо указать период selectedPeriod (start и end)');
+  }
+  
+  var url = 'https://seller-analytics-api.wildberries.ru/api/analytics/v3/sales-funnel/products';
+  
+  var allProducts = [];
+  var offset = 0;
+  var limit = 1000; // Максимальный размер страницы
+  
+  Logger.log('Начало загрузки статистики карточек товаров за период ' + selectedStart + ' - ' + selectedEnd);
+  
+  while (true) {
+    try {
+      var payload = {
+        selectedPeriod: {
+          start: selectedStart,
+          end: selectedEnd
+        },
+        nmIds: [],
+        brandNames: [],
+        subjectIds: [],
+        tagIds: [],
+        skipDeletedNm: false,
+        orderBy: {
+          field: 'openCard',
+          mode: 'desc'
+        },
+        limit: limit,
+        offset: offset
+      };
+      
+      // Добавляем период для сравнения если указан
+      if (pastStart && pastEnd) {
+        payload.pastPeriod = {
+          start: pastStart,
+          end: pastEnd
+        };
+      }
+      
+      var response = fetchWBAPIPost(url, payload);
+      
+      if (!response) {
+        Logger.log('Получены все данные. Всего товаров: ' + allProducts.length);
+        break;
+      }
+      
+      // API возвращает объект с data.products
+      var products = [];
+      if (response.data && response.data.products && Array.isArray(response.data.products)) {
+        products = response.data.products;
+      } else {
+        Logger.log('Неожиданная структура ответа');
+        break;
+      }
+      
+      if (products.length === 0) {
+        Logger.log('Получены все данные. Всего товаров: ' + allProducts.length);
+        break;
+      }
+      
+      allProducts = allProducts.concat(products);
+      Logger.log('Загружено товаров в этой итерации: ' + products.length + ', всего: ' + allProducts.length);
+      
+      // Если получили меньше чем limit, значит это последняя страница
+      if (products.length < limit) {
+        Logger.log('Получена последняя страница');
+        break;
+      }
+      
+      // Переходим к следующей странице
+      offset += limit;
+      
+      // Задержка для соблюдения лимитов API (3 запроса в минуту, интервал 20 секунд)
+      if (products.length === limit) {
+        Logger.log('Ожидание 20 секунд перед следующим запросом...');
+        Utilities.sleep(20000); // 20 секунд
+      }
+      
+    } catch (error) {
+      Logger.log('Ошибка при загрузке данных: ' + error.toString());
+      throw error;
+    }
+  }
+  
+  return allProducts;
+}

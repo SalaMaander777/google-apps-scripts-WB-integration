@@ -1,391 +1,263 @@
 /**
- * Модуль для отчета "Аналитика продавца - Воронка продаж"
- * Выгружает данные через API за предыдущий день с дозаписыванием
+ * Модуль для отчета "Статистика карточек товаров" (Sales Funnel)
+ * Выгружает данные по воронке продаж через API за предыдущий день с дозаписыванием
  */
 
 /**
- * Основная функция для синхронизации воронки продаж
- * Выгружает данные за предыдущий день и дозаписывает в таблицу
+ * Основная функция для синхронизации статистики карточек товаров
+ * Получает данные за предыдущий день с сравнением с таким же днем год назад
  */
 function syncSalesFunnel() {
   try {
-    Logger.log('=== Начало синхронизации воронки продаж ===');
+    Logger.log('=== Начало синхронизации статистики карточек товаров ===');
     
     // 1. Получаем дату предыдущего дня
     var reportDate = getPreviousDay();
     Logger.log('Дата отчета: ' + reportDate);
     
-    // 2. Проверяем, есть ли уже данные за эту дату
+    // 2. Получаем дату год назад для сравнения
+    var pastDate = getDateYearAgo(reportDate);
+    Logger.log('Дата для сравнения: ' + pastDate);
+    
+    // 3. Получаем или создаем лист
     var sheetName = getSalesFunnelSheetName();
     var sheet = getOrCreateSheet(sheetName);
     
     // Инициализируем заголовки если лист пустой
-    if (isSheetEmpty(sheet)) {
+    var lastRow = sheet.getLastRow();
+    if (lastRow === 0) {
       var headers = getSalesFunnelHeaders();
-      setSheetHeaders(sheet, headers);
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      // Форматирование заголовков
+      var headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setFontWeight('bold');
+      headerRange.setBackground('#e0e0e0');
       Logger.log('Заголовки установлены');
     }
     
-    // Проверяем дублирование данных (столбец 1 - дата)
-    if (dateExistsInSheet(sheet, reportDate, 1)) {
-      Logger.log('Данные за дату ' + reportDate + ' уже существуют в таблице. Пропускаем.');
+    // 4. Получаем данные из API с пагинацией
+    Logger.log('Получение данных из API...');
+    var allProducts = getSalesFunnelData(reportDate, reportDate, pastDate, pastDate);
+    
+    if (!allProducts || allProducts.length === 0) {
+      Logger.log('Нет данных за ' + reportDate);
       return;
     }
     
-    // 3. Создаем задание на генерацию отчета
-    var downloadId = createSalesFunnelReport(reportDate, reportDate);
-    if (!downloadId) {
-      throw new Error('Не удалось создать задание на генерацию отчета');
-    }
+    Logger.log('Получено товаров: ' + allProducts.length);
     
-    Logger.log('Создано задание с ID: ' + downloadId);
+    // 5. Фильтруем товары, для которых уже есть данные
+    var productsToProcess = [];
     
-    // 4. Ждем готовности отчета
-    var maxAttempts = 60; // Максимум 10 минут ожидания
-    var attempt = 0;
-    var status = '';
-    
-    while (attempt < maxAttempts) {
-      attempt++;
-      Logger.log('Проверка статуса, попытка ' + attempt + ' из ' + maxAttempts);
+    for (var i = 0; i < allProducts.length; i++) {
+      var item = allProducts[i];
       
-      status = checkSalesFunnelReportStatus(downloadId);
-      Logger.log('Статус отчета: ' + status);
-      
-      if (status === 'DONE') {
-        Logger.log('Отчет готов!');
-        break;
-      } else if (status === 'FAILED') {
-        throw new Error('Генерация отчета завершилась с ошибкой. Попробуйте создать отчет повторно.');
+      // Проверяем структуру данных
+      if (!item.product || !item.product.nmId) {
+        Logger.log('Пропускаем элемент без product.nmId');
+        continue;
       }
       
-      // Если отчет еще не готов, ждем 10 секунд
-      if (attempt < maxAttempts) {
-        Logger.log('Отчет еще не готов, ждем 10 секунд...');
-        Utilities.sleep(10000); // 10 секунд
+      var nmId = item.product.nmId;
+      
+      // Проверяем, есть ли уже данные за эту дату и товар
+      if (productAndDateExistInSheet(sheet, nmId, reportDate)) {
+        Logger.log('Данные для товара ' + nmId + ' за ' + reportDate + ' уже существуют. Пропускаем.');
+        continue;
       }
+      
+      productsToProcess.push(item);
     }
     
-    if (status !== 'DONE') {
-      throw new Error('Превышено время ожидания готовности отчета. Последний статус: ' + status);
-    }
-    
-    // 5. Получаем готовый отчет (CSV из ZIP)
-    Logger.log('Загрузка готового отчета...');
-    var csvData = downloadSalesFunnelReport(downloadId);
-    
-    if (!csvData || csvData.length === 0) {
-      Logger.log('Нет данных в отчете за ' + reportDate);
+    if (productsToProcess.length === 0) {
+      Logger.log('Нет новых товаров для обработки');
       return;
     }
     
-    Logger.log('Получено записей из CSV: ' + csvData.length);
+    Logger.log('Товаров для обработки: ' + productsToProcess.length);
     
-    // 6. Форматируем данные для записи
-    var formattedData = formatSalesFunnelData(csvData);
+    // 6. Формируем данные для записи
+    var dataToWrite = [];
     
-    if (!formattedData || formattedData.length === 0) {
-      Logger.log('Нет данных для записи после форматирования');
+    for (var i = 0; i < productsToProcess.length; i++) {
+      var item = productsToProcess[i];
+      var product = item.product || {};
+      var statistic = item.statistic || {};
+      var selected = statistic.selected || {};
+      var past = statistic.past || {};
+      var comparison = statistic.comparison || {};
+      var stocks = product.stocks || {};
+      var selectedWbClub = selected.wbClub || {};
+      var pastWbClub = past.wbClub || {};
+      var selectedConversions = selected.conversions || {};
+      var pastConversions = past.conversions || {};
+      var selectedTime = selected.timeToReady || {};
+      var pastTime = past.timeToReady || {};
+      
+      // Формируем строку среднего времени доставки
+      var selectedTimeStr = '';
+      if (selectedTime.days || selectedTime.hours || selectedTime.mins) {
+        selectedTimeStr = (selectedTime.days || 0) + 'д ' + (selectedTime.hours || 0) + 'ч ' + (selectedTime.mins || 0) + 'м';
+      }
+      
+      var pastTimeStr = '';
+      if (pastTime.days || pastTime.hours || pastTime.mins) {
+        pastTimeStr = (pastTime.days || 0) + 'д ' + (pastTime.hours || 0) + 'ч ' + (pastTime.mins || 0) + 'м';
+      }
+      
+      var row = [
+        reportDate,                              // 1. Дата
+        product.vendorCode || '',                // 2. Артикул продавца
+        product.nmId || '',                      // 3. Номенклатура
+        product.title || '',                     // 4. Название
+        product.subjectName || '',               // 5. Категория
+        product.brandName || '',                 // 6. Бренд
+        '',                                      // 7. Удаленный товар (нет в API)
+        product.productRating || 0,              // 8. Рейтинг карточки
+        selected.openCount || 0,                 // 9. Переходы в карточку
+        past.openCount || 0,                     // 10. Переходы в карточку (предыдущий период)
+        selected.cartCount || 0,                 // 11. Положили в корзину
+        past.cartCount || 0,                     // 12. Положили в корзину (предыдущий период)
+        selected.orderCount || 0,                // 13. Заказали, шт
+        past.orderCount || 0,                    // 14. Заказали, шт (предыдущий период)
+        selected.buyoutCount || 0,               // 15. Выкупили, шт
+        past.buyoutCount || 0,                   // 16. Выкупы, шт (предыдущий период)
+        selected.cancelCount || 0,               // 17. Отменили, шт
+        past.cancelCount || 0,                   // 18. Отменили, шт (предыдущий период)
+        selectedConversions.addToCartPercent || 0,   // 19. Конверсия в корзину, %
+        pastConversions.addToCartPercent || 0,       // 20. Конверсия в корзину, % (предыдущий период)
+        selectedConversions.cartToOrderPercent || 0, // 21. Конверсия в заказ, %
+        pastConversions.cartToOrderPercent || 0,     // 22. Конверсия в заказ, % (предыдущий период)
+        selectedConversions.buyoutPercent || 0,      // 23. Процент выкупа
+        pastConversions.buyoutPercent || 0,          // 24. Процент выкупа (предыдущий период)
+        selected.orderSum || 0,                  // 25. Заказали на сумму, руб
+        past.orderSum || 0,                      // 26. Заказали на сумму, руб (предыдущий период)
+        comparison.orderSumDynamic || 0,         // 27. Динамика суммы заказов, руб
+        selected.buyoutSum || 0,                 // 28. Выкупили на сумму, руб
+        past.buyoutSum || 0,                     // 29. Выкупили на сумму, руб (предыдущий период)
+        selected.cancelSum || 0,                 // 30. Отменили на сумму, руб
+        past.cancelSum || 0,                     // 31. Отменили на сумму, руб (предыдущий период)
+        selected.avgPrice || 0,                  // 32. Средняя цена, руб
+        past.avgPrice || 0,                      // 33. Средняя цена, руб (предыдущий период)
+        selected.avgOrdersCountPerDay || 0,      // 34. Среднее количество заказов в день, шт
+        past.avgOrdersCountPerDay || 0,          // 35. Среднее количество заказов в день, шт (предыдущий период)
+        stocks.wb || 0,                          // 36. Остатки склад ВБ, шт
+        stocks.mp || 0,                          // 37. Остатки МП, шт
+        stocks.balanceSum || 0,                  // 38. Сумма остатков на складах, руб
+        selectedTimeStr,                         // 39. Среднее время доставки
+        pastTimeStr,                             // 40. Среднее время доставки (предыдущий период)
+        selected.localizationPercent || 0,       // 41. Локальные заказы, %
+        past.localizationPercent || 0            // 42. Локальные заказы, % (предыдущий период)
+      ];
+      
+      dataToWrite.push(row);
+    }
+    
+    if (dataToWrite.length === 0) {
+      Logger.log('Нет данных для записи');
       return;
     }
     
-    // 7. Дозаписываем в таблицу
-    appendDataToSheet(sheet, formattedData);
+    // 7. Дозаписываем данные в таблицу
+    appendDataToSheet(sheet, dataToWrite);
     
-    Logger.log('=== Синхронизация завершена успешно. Записано строк: ' + formattedData.length + ' ===');
+    Logger.log('=== Синхронизация завершена успешно. Записано строк: ' + dataToWrite.length + ' ===');
     
   } catch (error) {
-    Logger.log('ОШИБКА при синхронизации воронки продаж: ' + error.toString());
+    Logger.log('ОШИБКА при синхронизации статистики карточек товаров: ' + error.toString());
     Logger.log('Стек ошибки: ' + error.stack);
     throw error;
   }
 }
 
 /**
- * Создать задание на генерацию отчета воронки продаж
- * @param {string} startDate - Дата начала периода (YYYY-MM-DD)
- * @param {string} endDate - Дата конца периода (YYYY-MM-DD)
- * @return {string} ID задания (downloadId)
- */
-function createSalesFunnelReport(startDate, endDate) {
-  var url = 'https://seller-analytics-api.wildberries.ru/api/v2/nm-report/downloads';
-  var token = getWBApiToken();
-  
-  // Генерируем UUID для отчета
-  var reportId = generateUUID();
-  
-  // Параметры отчета
-  var payload = {
-    id: reportId,
-    reportType: 'DETAIL_HISTORY_REPORT',
-    userReportName: 'Воронка продаж ' + startDate,
-    params: {
-      nmIDs: [], // Пустой массив = все товары
-      startDate: startDate,
-      endDate: endDate,
-      timezone: 'Europe/Moscow',
-      aggregationLevel: 'day'
-    }
-  };
-  
-  try {
-    var response = UrlFetchApp.fetch(url, {
-      method: 'post',
-      headers: {
-        'Authorization': token,
-        'Content-Type': 'application/json'
-      },
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-    
-    var statusCode = response.getResponseCode();
-    
-    if (statusCode !== 200) {
-      var errorText = response.getContentText();
-      Logger.log('Ошибка создания задания: ' + statusCode + ' - ' + errorText);
-      throw new Error('Ошибка создания задания: ' + statusCode + ' - ' + errorText);
-    }
-    
-    // API возвращает пустой ответ, используем сгенерированный ID
-    return reportId;
-    
-  } catch (error) {
-    Logger.log('Ошибка при создании задания: ' + error.toString());
-    throw error;
-  }
-}
-
-/**
- * Проверить статус готовности отчета
- * @param {string} downloadId - ID отчета
- * @return {string} Статус (PROCESSING, DONE, FAILED)
- */
-function checkSalesFunnelReportStatus(downloadId) {
-  var url = 'https://seller-analytics-api.wildberries.ru/api/v2/nm-report/downloads';
-  var token = getWBApiToken();
-  
-  // Формируем URL с параметрами фильтра
-  var queryString = 'filter[downloadIds]=' + encodeURIComponent(downloadId);
-  var fullUrl = url + '?' + queryString;
-  
-  try {
-    var response = UrlFetchApp.fetch(fullUrl, {
-      method: 'get',
-      headers: {
-        'Authorization': token,
-        'Content-Type': 'application/json'
-      },
-      muteHttpExceptions: true
-    });
-    
-    var statusCode = response.getResponseCode();
-    
-    if (statusCode !== 200) {
-      var errorText = response.getContentText();
-      Logger.log('Ошибка проверки статуса: ' + statusCode + ' - ' + errorText);
-      throw new Error('Ошибка проверки статуса: ' + statusCode + ' - ' + errorText);
-    }
-    
-    var responseText = response.getContentText();
-    var result = JSON.parse(responseText);
-    
-    if (!result || !result.data || !Array.isArray(result.data) || result.data.length === 0) {
-      Logger.log('Отчет не найден в списке');
-      return 'PROCESSING';
-    }
-    
-    // Находим наш отчет по ID
-    var report = result.data.find(function(item) {
-      return item.id === downloadId;
-    });
-    
-    if (!report) {
-      Logger.log('Отчет с ID ' + downloadId + ' не найден');
-      return 'PROCESSING';
-    }
-    
-    return report.status || 'PROCESSING';
-    
-  } catch (error) {
-    Logger.log('Ошибка при проверке статуса: ' + error.toString());
-    throw error;
-  }
-}
-
-/**
- * Скачать готовый отчет в формате CSV из ZIP архива
- * @param {string} downloadId - ID отчета
- * @return {Array<Object>} Массив объектов с данными из CSV
- */
-function downloadSalesFunnelReport(downloadId) {
-  var url = 'https://seller-analytics-api.wildberries.ru/api/v2/nm-report/downloads/file/' + downloadId;
-  var token = getWBApiToken();
-  
-  try {
-    var response = UrlFetchApp.fetch(url, {
-      method: 'get',
-      headers: {
-        'Authorization': token
-      },
-      muteHttpExceptions: true
-    });
-    
-    var statusCode = response.getResponseCode();
-    
-    if (statusCode === 204) {
-      Logger.log('API вернул 204 - нет данных');
-      return [];
-    }
-    
-    if (statusCode !== 200) {
-      var errorText = response.getContentText();
-      Logger.log('Ошибка загрузки отчета: ' + statusCode + ' - ' + errorText);
-      throw new Error('Ошибка загрузки отчета: ' + statusCode + ' - ' + errorText);
-    }
-    
-    // Получаем ZIP архив
-    var blob = response.getBlob();
-    
-    // Распаковываем ZIP
-    var unzippedBlobs = Utilities.unzip(blob);
-    
-    if (!unzippedBlobs || unzippedBlobs.length === 0) {
-      Logger.log('ZIP архив пустой');
-      return [];
-    }
-    
-    // Берем первый файл из архива (должен быть CSV)
-    var csvBlob = unzippedBlobs[0];
-    var csvContent = csvBlob.getDataAsString('UTF-8');
-    
-    // Парсим CSV
-    var csvData = parseCSV(csvContent);
-    
-    return csvData;
-    
-  } catch (error) {
-    Logger.log('Ошибка при загрузке отчета: ' + error.toString());
-    throw error;
-  }
-}
-
-/**
- * Парсинг CSV файла
- * @param {string} csvContent - Содержимое CSV файла
- * @return {Array<Object>} Массив объектов с данными
- */
-function parseCSV(csvContent) {
-  if (!csvContent) return [];
-  
-  var lines = csvContent.split('\n');
-  if (lines.length === 0) return [];
-  
-  // Первая строка - заголовки
-  var headers = lines[0].split(';').map(function(h) {
-    return h.trim().replace(/^"/, '').replace(/"$/, '');
-  });
-  
-  var result = [];
-  
-  // Парсим данные
-  for (var i = 1; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (!line) continue;
-    
-    var values = line.split(';').map(function(v) {
-      return v.trim().replace(/^"/, '').replace(/"$/, '');
-    });
-    
-    if (values.length === headers.length) {
-      var row = {};
-      for (var j = 0; j < headers.length; j++) {
-        row[headers[j]] = values[j];
-      }
-      result.push(row);
-    }
-  }
-  
-  return result;
-}
-
-/**
- * Форматировать данные из CSV в формат для таблицы
- * @param {Array<Object>} csvData - Массив объектов из CSV
- * @return {Array<Array>} Массив строк для Google Sheets
- */
-function formatSalesFunnelData(csvData) {
-  var data = [];
-  
-  for (var i = 0; i < csvData.length; i++) {
-    var r = csvData[i];
-    
-    var row = [
-      r['Дата'] || r['date'] || '',                          // 1. Дата
-      r['Артикул WB'] || r['nmId'] || '',                    // 2. Артикул WB
-      r['Артикул продавца'] || r['vendorCode'] || '',        // 3. Артикул продавца
-      r['Наименование'] || r['name'] || '',                  // 4. Наименование
-      r['Предмет'] || r['subject'] || '',                    // 5. Предмет
-      r['Бренд'] || r['brand'] || '',                        // 6. Бренд
-      parseNumber(r['Открытий карточек'] || r['cardViews'] || 0),       // 7. Открытий карточек (переходы в карточку)
-      parseNumber(r['Добавлено в корзину'] || r['addedToCart'] || 0),   // 8. Добавлено в корзину
-      parseNumber(r['Заказано товаров'] || r['orders'] || 0),           // 9. Заказано товаров
-      parseNumber(r['Заказано на сумму'] || r['ordersSum'] || 0),       // 10. Заказано на сумму
-      parseNumber(r['Выкупили товаров'] || r['buyouts'] || 0),          // 11. Выкупили товаров (если есть)
-      parseNumber(r['Выкупили на сумму'] || r['buyoutsSum'] || 0)       // 12. Выкупили на сумму (если есть)
-    ];
-    
-    data.push(row);
-  }
-  
-  return data;
-}
-
-/**
- * Получить заголовки для листа воронки продаж
+ * Получить заголовки для листа статистики карточек товаров
  * @return {Array<string>} Массив заголовков
  */
 function getSalesFunnelHeaders() {
   return [
     'Дата',
-    'Артикул WB',
     'Артикул продавца',
-    'Наименование',
-    'Предмет',
+    'Номенклатура',
+    'Название',
+    'Категория',
     'Бренд',
+    'Удаленный товар',
+    'Рейтинг карточки',
     'Переходы в карточку',
+    'Переходы в карточку (предыдущий период)',
     'Положили в корзину',
-    'Заказы',
-    'Заказы на сумму',
-    'Выкупы',
-    'Выкупы на сумму'
+    'Положили в корзину (предыдущий период)',
+    'Заказали, шт',
+    'Заказали, шт (предыдущий период)',
+    'Выкупили, шт',
+    'Выкупы, шт (предыдущий период)',
+    'Отменили, шт',
+    'Отменили, шт (предыдущий период)',
+    'Конверсия в корзину, %',
+    'Конверсия в корзину, % (предыдущий период)',
+    'Конверсия в заказ, %',
+    'Конверсия в заказ, % (предыдущий период)',
+    'Процент выкупа',
+    'Процент выкупа (предыдущий период)',
+    'Заказали на сумму, руб',
+    'Заказали на сумму, руб (предыдущий период)',
+    'Динамика суммы заказов, руб',
+    'Выкупили на сумму, руб',
+    'Выкупили на сумму, руб (предыдущий период)',
+    'Отменили на сумму, руб',
+    'Отменили на сумму, руб (предыдущий период)',
+    'Средняя цена, руб',
+    'Средняя цена, руб (предыдущий период)',
+    'Среднее количество заказов в день, шт',
+    'Среднее количество заказов в день, шт (предыдущий период)',
+    'Остатки склад ВБ, шт',
+    'Остатки МП, шт',
+    'Сумма остатков на складах, руб',
+    'Среднее время доставки',
+    'Среднее время доставки (предыдущий период)',
+    'Локальные заказы, %',
+    'Локальные заказы, % (предыдущий период)'
   ];
 }
 
 /**
- * Парсинг числа из строки
- * @param {*} value - Значение для парсинга
- * @return {number} Число или 0
+ * Проверить, существует ли запись для товара и даты в листе
+ * @param {Sheet} sheet - Лист
+ * @param {number} nmId - Артикул WB
+ * @param {string} dateStr - Дата в формате YYYY-MM-DD
+ * @return {boolean} true если запись уже существует
  */
-function parseNumber(value) {
-  if (typeof value === 'number') return value;
-  if (!value) return 0;
+function productAndDateExistInSheet(sheet, nmId, dateStr) {
+  if (isSheetEmpty(sheet)) {
+    return false;
+  }
   
-  // Убираем пробелы и заменяем запятую на точку
-  var cleaned = String(value).replace(/\s/g, '').replace(',', '.');
-  var num = parseFloat(cleaned);
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) { // Только заголовок
+    return false;
+  }
   
-  return isNaN(num) ? 0 : num;
-}
-
-/**
- * Генерация UUID v4
- * @return {string} UUID
- */
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0;
-    var v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+  // Получаем столбцы: Дата отчета (столбец 1) и Артикул WB (столбец 2)
+  var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  
+  for (var i = 0; i < data.length; i++) {
+    var rowDate = data[i][0];        // Дата отчета в столбце 1
+    var rowNmId = data[i][1];        // Артикул WB в столбце 2
+    
+    // Преобразуем дату в строку для сравнения
+    var rowDateStr = '';
+    if (rowDate instanceof Date) {
+      rowDateStr = Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else if (typeof rowDate === 'string') {
+      rowDateStr = rowDate.split('T')[0];
+    }
+    
+    // Сравниваем артикул и дату
+    if (String(rowNmId) === String(nmId) && rowDateStr === dateStr) {
+      return true;
+    }
+  }
+  
+  return false;
 }

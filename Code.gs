@@ -15,9 +15,10 @@ function onOpen() {
     .addItem('Синхронизация остатков', 'manualStocksSync')
     .addItem('Синхронизация финансовых отчетов', 'manualFinanceDailySync')
     .addItem('Синхронизация ленты заказов', 'manualOrdersFeedSync')
-    .addItem('Синхронизация воронки продаж', 'manualSalesFunnelSync')
+    .addSeparator()
     .addItem('Синхронизация аналитики РК', 'manualAdsAnalyticsSync')
     .addItem('Синхронизация истории рекламных расходов', 'manualAdsCostsSync')
+    .addItem('Синхронизация аналитики продавца', 'manualSalesFunnelSync')
     .addToUi();
 }
 
@@ -152,27 +153,6 @@ function manualStocksSync() {
 }
 
 /**
- * Функция для запуска синхронизации воронки продаж
- * Вызывается по триггеру ежедневно
- */
-function runSalesFunnelSync() {
-  try {
-    syncSalesFunnel();
-  } catch (error) {
-    Logger.log('Критическая ошибка в runSalesFunnelSync: ' + error.toString());
-    // Не пробрасываем ошибку дальше, чтобы не ломать другие триггеры
-  }
-}
-
-/**
- * Функция для ручного запуска синхронизации воронки продаж
- * Можно вызвать из меню или вручную
- */
-function manualSalesFunnelSync() {
-  syncSalesFunnel();
-}
-
-/**
  * Функция для запуска синхронизации аналитики рекламных кампаний
  * Вызывается по триггеру ежедневно
  */
@@ -212,4 +192,25 @@ function runAdsCostsSync() {
  */
 function manualAdsCostsSync() {
   syncAdsCosts();
+}
+
+/**
+ * Функция для запуска синхронизации аналитики продавца
+ * Вызывается по триггеру ежедневно
+ */
+function runSalesFunnelSync() {
+  try {
+    syncSalesFunnel();
+  } catch (error) {
+    Logger.log('Критическая ошибка в runSalesFunnelSync: ' + error.toString());
+    // Не пробрасываем ошибку дальше, чтобы не ломать другие триггеры
+  }
+}
+
+/**
+ * Функция для ручного запуска синхронизации аналитики продавца
+ * Можно вызвать из меню или вручную
+ */
+function manualSalesFunnelSync() {
+  syncSalesFunnel();
 }

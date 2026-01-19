@@ -119,6 +119,12 @@ function syncAdsAnalytics() {
       var campaign = campaignsToProcess[i];
       var stats = statsMap[campaign.id] || {};
       
+      // Пропускаем кампании с нулевыми показами
+      if (!stats.views || stats.views === 0) {
+        Logger.log('Пропускаем кампанию ' + campaign.id + ' - показы равны 0');
+        continue;
+      }
+      
       // Получаем дату выгрузки из timestamps
       var uploadDate = reportDate;
       if (campaign.timestamps && campaign.timestamps.updatedAt) {
@@ -135,26 +141,32 @@ function syncAdsAnalytics() {
         paymentType = campaign.settings.payment_type || '';
       }
       
+      // Преобразуем тип ставки в русское название
+      var bidTypeRu = '';
+      if (campaign.bid_type === 'unified') {
+        bidTypeRu = 'Единая ставка';
+      } else if (campaign.bid_type === 'manual') {
+        bidTypeRu = 'Ручная ставка';
+      } else {
+        bidTypeRu = campaign.bid_type || '';
+      }
+      
+      // Форматируем период в формате DD.MM.YYYY - DD.MM.YYYY
+      var periodFormatted = formatDateRu(reportDate) + ' - ' + formatDateRu(reportDate);
+      
       var row = [
-        uploadDate,                                      // 1. Дата выгрузки
-        campaign.bid_type || '',                         // 2. Тип РК (unified/manual)
-        campaign.id || '',                               // 3. ID РК
-        campaignName,                                    // 4. Название кампании (из settings.name)
-        campaign.status || '',                           // 5. Статус
-        paymentType,                                     // 6. Тип оплаты (из settings.payment_type)
-        reportDate,                                      // 7. Дата начала периода статистики
-        reportDate,                                      // 8. Дата конца периода статистики
-        stats.views || 0,                                // 9. Показы
-        stats.clicks || 0,                               // 10. Клики
-        stats.ctr || 0,                                  // 11. CTR
-        stats.cpc || 0,                                  // 12. CPC
-        stats.sum || 0,                                  // 13. Затраты
-        stats.atbs || 0,                                 // 14. Добавления в корзину
-        stats.orders || 0,                               // 15. Заказы
-        stats.cr || 0,                                   // 16. CR (conversion rate)
-        stats.shks || 0,                                 // 17. Количество заказанных товаров
-        stats.sum_price || 0,                            // 18. Сумма заказов
-        stats.canceled || 0                              // 19. Отмены
+        uploadDate,                                      // A. Дата выгрузки
+        bidTypeRu,                                       // B. Тип РК (Единая ставка/Ручная ставка)
+        campaign.id || '',                               // C. ID РК
+        campaignName,                                    // D. Название кампании (из settings.name)
+        campaign.status || '',                           // E. Статус
+        paymentType,                                     // F. Тип оплаты (из settings.payment_type)
+        '',                                              // G. Старт (пустое поле)
+        '',                                              // H. Финиш (формула будет добавлена отдельно)
+        periodFormatted,                                 // I. Выбранный период
+        stats.views || 0,                                // J. Показы
+        stats.clicks || 0,                               // K. Клики
+        ''                                               // L. АРТ (формула будет добавлена отдельно)
       ];
       
       dataToWrite.push(row);
@@ -166,7 +178,18 @@ function syncAdsAnalytics() {
     }
     
     // 8. Дозаписываем данные в таблицу
+    var startRow = sheet.getLastRow() + 1;
     appendDataToSheet(sheet, dataToWrite);
+    
+    // 9. Добавляем формулы в столбцы H (Финиш) и L (АРТ)
+    var endRow = sheet.getLastRow();
+    for (var rowNum = startRow; rowNum <= endRow; rowNum++) {
+      // Формула для столбца H (Финиш): =K/J
+      sheet.getRange(rowNum, 8).setFormula('=K' + rowNum + '/J' + rowNum);
+      
+      // Формула для столбца L (АРТ): =ВПР(C,'ID-АРТ'!A:B,2,0)
+      sheet.getRange(rowNum, 12).setFormula('=VLOOKUP(C' + rowNum + ',\'ID-АРТ\'!A:B,2,0)');
+    }
     
     Logger.log('=== Синхронизация завершена успешно. Записано строк: ' + dataToWrite.length + ' ===');
     
@@ -189,19 +212,12 @@ function getAdsAnalyticsHeaders() {
     'Название',
     'Статус',
     'Тип оплаты',
-    'Период начало',
-    'Период конец',
+    'Старт',
+    'Финиш',
+    'Выбранный период',
     'Показы',
     'Клики',
-    'CTR',
-    'CPC',
-    'Затраты',
-    'Добавления в корзину',
-    'Заказы',
-    'CR',
-    'Заказано товаров шт',
-    'Сумма заказов',
-    'Отмены'
+    'АРТ'
   ];
 }
 
@@ -222,19 +238,22 @@ function campaignAndDateExistInSheet(sheet, campaignId, dateStr) {
     return false;
   }
   
-  // Получаем столбцы: ID РК (столбец 3) и Период начало (столбец 7)
-  var data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+  // Получаем столбцы: ID РК (столбец 3) и Выбранный период (столбец 9)
+  var data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
   
   for (var i = 0; i < data.length; i++) {
     var rowCampaignId = data[i][2]; // ID РК в столбце 3
-    var rowDate = data[i][6];        // Период начало в столбце 7
+    var rowPeriod = data[i][8];      // Выбранный период в столбце 9
     
-    // Преобразуем дату в строку для сравнения
+    // Извлекаем дату из периода (формат: DD.MM.YYYY - DD.MM.YYYY)
     var rowDateStr = '';
-    if (rowDate instanceof Date) {
-      rowDateStr = Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    } else if (typeof rowDate === 'string') {
-      rowDateStr = rowDate.split('T')[0];
+    if (typeof rowPeriod === 'string' && rowPeriod.indexOf(' - ') !== -1) {
+      var periodStart = rowPeriod.split(' - ')[0];
+      // Преобразуем DD.MM.YYYY в YYYY-MM-DD
+      var parts = periodStart.split('.');
+      if (parts.length === 3) {
+        rowDateStr = parts[2] + '-' + parts[1] + '-' + parts[0];
+      }
     }
     
     // Сравниваем ID кампании и дату

@@ -42,12 +42,12 @@ Code must be logically separated into files:
 /sheets.gs
 /dateUtils.gs
 /reports/
-  stocks.gs
-  financeDaily.gs
-  salesFunnel.gs
-  ordersFeed.gs
-  adsAnalytics.gs
-  adsCosts.gs
+ stocks.gs
+ financeDaily.gs
+ ordersFeed.gs
+ adsAnalytics.gs
+ adsCosts.gs
+ salesFunnel.gs
 
 Mixing logic from different reports in one file is FORBIDDEN.
 
@@ -74,15 +74,7 @@ Mixing logic from different reports in one file is FORBIDDEN.
 
 ---
 
-### 3. SELLER ANALYTICS – SALES FUNNEL
-- Data period: previous day
-- Append-only
-- Duplicate dates are NOT allowed
-- No calculations in code (Sheets only)
-
----
-
-### 4. ORDERS FEED
+### 3. ORDERS FEED
 - Data period: previous day
 - Append-only
 - Multiple rows per day allowed
@@ -90,7 +82,7 @@ Mixing logic from different reports in one file is FORBIDDEN.
 
 ---
 
-### 5. ADVERTISING ANALYTICS
+### 4. ADVERTISING ANALYTICS
 - Data period: previous day
 - Append-only
 - Unique key: campaignId + date
@@ -98,11 +90,21 @@ Mixing logic from different reports in one file is FORBIDDEN.
 
 ---
 
-### 6. ADVERTISING COST HISTORY
+### 5. ADVERTISING COST HISTORY
 - Source: WB Seller → Advertising → Finance
 - Data period: strictly previous day
 - Append-only
 - Must handle delayed or partial API responses
+
+---
+
+### 6. SALES FUNNEL (PRODUCT CARDS STATISTICS)
+- Data period: previous day
+- Comparison period: same date one year ago
+- Append-only
+- Unique key: nmId + date
+- Must support pagination (up to 1000 products per page)
+- Includes conversion metrics and WB Club data
 
 ---
 
