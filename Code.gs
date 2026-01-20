@@ -401,6 +401,11 @@
               results.push('Воронка динамика');
               break;
               
+            case 'funnelDynamicWeek':
+              syncFunnelDynamicWeekByDate(date);
+              results.push('Воронка динамика (неделя)');
+              break;
+              
             default:
               Logger.log('Неизвестный тип отчета: ' + reportType);
           }

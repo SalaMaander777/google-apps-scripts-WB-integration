@@ -545,3 +545,27 @@ function syncSalesFunnelByDate(date) {
     throw error;
   }
 }
+
+/**
+ * Синхронизация воронки динамики за неделю
+ * Добавляет дневные столбцы за всю неделю и итоговый недельный столбец
+ * @param {string} date - Дата (любой день недели или воскресенье для конца недели) в формате YYYY-MM-DD
+ */
+function syncFunnelDynamicWeekByDate(date) {
+  try {
+    Logger.log('=== Начало синхронизации недельной воронки динамики ===');
+    Logger.log('Входная дата: ' + date);
+    
+    // Вызываем функцию синхронизации недельной статистики
+    // Она сама найдет ближайшее воскресенье и обработает всю неделю
+    var result = syncSalesFunnelDynamicWeek(date);
+    
+    Logger.log('=== Синхронизация недельной воронки динамики завершена ===');
+    
+    return result;
+    
+  } catch (error) {
+    Logger.log('ОШИБКА при синхронизации недельной воронки динамики: ' + error.toString());
+    throw error;
+  }
+}

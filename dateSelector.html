@@ -157,7 +157,8 @@
     <div class="form-group">
       <label for="reportDate">Дата отчета:</label>
       <input type="date" id="reportDate" required>
-      <div class="note">Выберите дату, за которую нужно загрузить отчеты</div>
+      <div class="note">Выберите дату, за которую нужно загрузить отчеты.<br>
+      Для недельной статистики воронки: выберите любой день недели или воскресенье (конец недели)</div>
     </div>
     
     <div class="checkbox-group">
@@ -174,28 +175,33 @@
       </div>
       
       <div class="checkbox-item">
-        <input type="checkbox" class="report-checkbox" id="financeDaily" value="financeDaily" checked>
+        <input type="checkbox" class="report-checkbox" id="financeDaily" value="financeDaily">
         <label for="financeDaily">Ежедневные финансовые отчеты</label>
       </div>
       
       <div class="checkbox-item">
-        <input type="checkbox" class="report-checkbox" id="ordersFeed" value="ordersFeed" checked>
+        <input type="checkbox" class="report-checkbox" id="ordersFeed" value="ordersFeed">
         <label for="ordersFeed">Лента заказов</label>
       </div>
       
       <div class="checkbox-item">
-        <input type="checkbox" class="report-checkbox" id="adsAnalytics" value="adsAnalytics" checked>
+        <input type="checkbox" class="report-checkbox" id="adsAnalytics" value="adsAnalytics">
         <label for="adsAnalytics">Аналитика РК</label>
       </div>
       
       <div class="checkbox-item">
-        <input type="checkbox" class="report-checkbox" id="salesFunnel" value="salesFunnel" checked>
+        <input type="checkbox" class="report-checkbox" id="salesFunnel" value="salesFunnel">
         <label for="salesFunnel">Аналитика продавца</label>
       </div>
       
       <div class="checkbox-item">
         <input type="checkbox" class="report-checkbox" id="funnelDynamic" value="funnelDynamic">
-        <label for="funnelDynamic">Воронка динамика (добавить столбец)</label>
+        <label for="funnelDynamic">Воронка динамика (добавить дневной столбец)</label>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" class="report-checkbox" id="funnelDynamicWeek" value="funnelDynamicWeek">
+        <label for="funnelDynamicWeek">Воронка динамика (добавить недельную статистику)</label>
       </div>
     </div>
     

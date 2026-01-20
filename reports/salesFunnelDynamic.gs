@@ -360,6 +360,420 @@ function getColumnLetter(col) {
 }
 
 /**
+ * Найти позицию для вставки недельного столбца по дате окончания
+ * @param {Sheet} sheet - Лист
+ * @param {string} weekStartDate - Дата начала недели в формате YYYY-MM-DD
+ * @param {string} weekEndDate - Дата окончания недели в формате YYYY-MM-DD
+ * @return {number} Позиция для вставки (или -1 если такая неделя уже существует)
+ */
+function findWeekColumnPosition(sheet, weekStartDate, weekEndDate) {
+  var lastCol = sheet.getLastColumn();
+  
+  // Если только столбец A (заголовки), добавляем в B
+  if (lastCol === 1) {
+    return 2;
+  }
+  
+  // Читаем даты начала (строка 7) и окончания (строка 8)
+  var startDatesRow = sheet.getRange(7, 2, 1, lastCol - 1).getValues()[0];
+  var endDatesRow = sheet.getRange(8, 2, 1, lastCol - 1).getValues()[0];
+  
+  // Преобразуем даты для сравнения
+  var newStartDateObj = parseDateString(weekStartDate);
+  var newEndDateObj = parseDateString(weekEndDate);
+  
+  // Ищем правильную позицию
+  for (var i = 0; i < endDatesRow.length; i++) {
+    var startCellValue = startDatesRow[i];
+    var endCellValue = endDatesRow[i];
+    
+    // Пропускаем пустые ячейки
+    if (!endCellValue || endCellValue === '') {
+      continue;
+    }
+    
+    // Получаем даты из ячеек
+    var existingStartDateObj = parseCellDate(startCellValue);
+    var existingEndDateObj = parseCellDate(endCellValue);
+    
+    if (!existingEndDateObj) {
+      continue;
+    }
+    
+    // Проверяем, не является ли это той же самой неделей
+    if (existingStartDateObj && existingEndDateObj) {
+      if (compareDates(newStartDateObj, existingStartDateObj) === 0 && 
+          compareDates(newEndDateObj, existingEndDateObj) === 0) {
+        // Точно такая же неделя уже существует
+        return -1;
+      }
+    }
+    
+    // Сравниваем по дате окончания для определения позиции
+    var comparison = compareDates(newEndDateObj, existingEndDateObj);
+    
+    if (comparison === 0) {
+      // Дата окончания совпадает - проверяем дату начала
+      if (existingStartDateObj && compareDates(newStartDateObj, existingStartDateObj) === 0) {
+        return -1; // Та же неделя
+      }
+    } else if (comparison < 0) {
+      // Новая дата раньше существующей - вставляем здесь
+      return i + 2;
+    }
+  }
+  
+  // Новая дата позже всех существующих - добавляем в конец
+  return lastCol + 1;
+}
+
+/**
+ * Добавить недельный столбец в лист "Воронка динамика"
+ * @param {string} weekEndDate - Дата окончания недели (воскресенье) в формате YYYY-MM-DD
+ * @return {Object} Результат операции
+ */
+function addSalesFunnelDynamicWeekColumn(weekEndDate) {
+  try {
+    Logger.log('Добавление недельного столбца для недели, заканчивающейся: ' + weekEndDate);
+    
+    // Вычисляем дату начала недели (понедельник)
+    var endDate = parseDateString(weekEndDate);
+    var startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6); // 6 дней назад = начало недели
+    
+    var weekStartDate = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    
+    Logger.log('Период недели: ' + weekStartDate + ' - ' + weekEndDate);
+    
+    // Получаем или создаем лист
+    var sheetName = getSalesFunnelDynamicSheetName();
+    var sheet = getOrCreateSheet(sheetName);
+    
+    // Проверяем, что лист инициализирован
+    if (sheet.getLastRow() < 50) {
+      var errorMsg = 'Лист "Воронка динамика" не инициализирован. Должно быть минимум 50 строк.';
+      Logger.log('ОШИБКА: ' + errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    // Находим правильную позицию для вставки недельного столбца
+    var insertPosition = findWeekColumnPosition(sheet, weekStartDate, weekEndDate);
+    
+    if (insertPosition === -1) {
+      Logger.log('Недельный столбец для недели ' + weekStartDate + ' - ' + weekEndDate + ' уже существует. Пропускаем.');
+      return { success: true, message: 'Столбец уже существует', skipped: true };
+    }
+    
+    Logger.log('Позиция для вставки недельного столбца: ' + insertPosition);
+    
+    // Вставляем новый столбец
+    if (insertPosition <= sheet.getLastColumn()) {
+      sheet.insertColumnBefore(insertPosition);
+      Logger.log('Вставлен новый столбец перед позицией ' + insertPosition);
+    }
+    
+    // Заполняем столбец недельными данными
+    addWeeklyColumn(sheet, insertPosition, weekStartDate, weekEndDate);
+    
+    Logger.log('Недельный столбец успешно добавлен для недели ' + weekStartDate + ' - ' + weekEndDate);
+    
+    return { success: true, message: 'Недельный столбец успешно добавлен', skipped: false };
+    
+  } catch (error) {
+    Logger.log('ОШИБКА при добавлении недельного столбца: ' + error.toString());
+    Logger.log('Стек ошибки: ' + error.stack);
+    throw error;
+  }
+}
+
+/**
+ * Добавить столбец с недельной статистикой
+ * @param {Sheet} sheet - Лист
+ * @param {number} col - Номер столбца
+ * @param {string} startDate - Дата начала недели в формате YYYY-MM-DD
+ * @param {string} endDate - Дата окончания недели в формате YYYY-MM-DD
+ */
+function addWeeklyColumn(sheet, col, startDate, endDate) {
+  Logger.log('Добавление недельного столбца: колонка=' + col + ', период=' + startDate + ' - ' + endDate);
+  
+  // Преобразуем даты в формат DD.MM.YYYY для отображения
+  var displayStartDate = formatDateRu(startDate);
+  var displayEndDate = formatDateRu(endDate);
+  
+  // Получаем букву столбца
+  var colLetter = getColumnLetter(col);
+  
+  // Вычисляем диапазон столбцов для усреднения (7 дней)
+  // Ищем столбцы с датами, входящими в неделю
+  var weekStartCol = null;
+  var weekEndCol = null;
+  
+  // Читаем все даты из строки 8 (Дата до) для поиска дневных столбцов
+  var lastCol = sheet.getLastColumn();
+  var datesRow = sheet.getRange(8, 2, 1, lastCol - 1).getValues()[0];
+  
+  var startDateObj = parseDateString(startDate);
+  var endDateObj = parseDateString(endDate);
+  
+  for (var i = 0; i < datesRow.length; i++) {
+    var cellValue = datesRow[i];
+    if (!cellValue || cellValue === '') continue;
+    
+    var cellDateObj = parseCellDate(cellValue);
+    if (!cellDateObj) continue;
+    
+    // Проверяем, входит ли дата в диапазон недели
+    if (cellDateObj >= startDateObj && cellDateObj <= endDateObj) {
+      if (weekStartCol === null) {
+        weekStartCol = i + 2; // +2 потому что начинаем с B
+      }
+      weekEndCol = i + 2;
+    }
+  }
+  
+  // Если не нашли дневные столбцы, используем текущий столбец
+  if (weekStartCol === null || weekEndCol === null) {
+    weekStartCol = col;
+    weekEndCol = col;
+    Logger.log('Не найдены дневные столбцы для недели, используем текущий столбец');
+  }
+  
+  var weekStartColLetter = getColumnLetter(weekStartCol);
+  var weekEndColLetter = getColumnLetter(weekEndCol);
+  
+  Logger.log('Диапазон для усреднения: ' + weekStartColLetter + ' - ' + weekEndColLetter);
+  
+  // Массив для хранения всех значений столбца (50 строк)
+  var columnData = [];
+  
+  // Строки 1-6: служебная информация (пустые)
+  for (var i = 1; i <= 6; i++) {
+    columnData.push(['']);
+  }
+  
+  // Строка 7: Дата с (начальная дата)
+  columnData.push([displayStartDate]);
+  
+  // Строка 8: Дата до (конечная дата)
+  columnData.push([displayEndDate]);
+  
+  // Строка 9: Среднее заказов по артикулу за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '9:' + weekEndColLetter + '9)']);
+  
+  // Строка 10: Динамика заказов (пусто для недельных)
+  columnData.push(['']);
+  
+  // Строка 11: Среднее суммы заказов по артикулу за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '11:' + weekEndColLetter + '11)']);
+  
+  // Строка 12: Динамика суммы заказов (пусто)
+  columnData.push(['']);
+  
+  // Строка 13: Среднее заказов по модели за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '13:' + weekEndColLetter + '13)']);
+  
+  // Строка 14: Динамика заказов по модели (пусто)
+  columnData.push(['']);
+  
+  // Строка 15: Среднее суммы заказов по модели за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '15:' + weekEndColLetter + '15)']);
+  
+  // Строка 16: Доля заказов артикула в группе по модели
+  columnData.push(['=IFERROR(' + colLetter + '11/' + colLetter + '15,0)']);
+  
+  // Строка 17: Среднее выкупов по артикулу за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '17:' + weekEndColLetter + '17)']);
+  
+  // Строка 18: Среднее выкупов по модели за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '18:' + weekEndColLetter + '18)']);
+  
+  // Строка 19: Сумма выкупов по артикулу (пусто)
+  columnData.push(['']);
+  
+  // Строка 20: Динамика выкупы артикул (пусто)
+  columnData.push(['']);
+  
+  // Строка 21: Динамика выкупы модели (пусто)
+  columnData.push(['']);
+  
+  // Строка 22: Возвраты (пусто)
+  columnData.push(['']);
+  
+  // Строка 23: Сумма Возвратов (пусто)
+  columnData.push(['']);
+  
+  // Строка 24: % выкупа по артикулу за неделю
+  columnData.push(['=SUM(' + weekStartColLetter + '17:' + weekEndColLetter + '17)/SUM(' + weekStartColLetter + '9:' + weekEndColLetter + '9)']);
+  
+  // Строка 25: % выкупа по модели за неделю
+  columnData.push(['=' + colLetter + '18/' + colLetter + '13']);
+  
+  // Строка 26: CTR артикула
+  columnData.push(['=IFERROR(' + colLetter + '30/' + colLetter + '28,0)']);
+  
+  // Строка 27: Среднее переходов в карточку за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '27:' + weekEndColLetter + '27)']);
+  
+  // Строка 28: Среднее показов рекламы по цвету за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '28:' + weekEndColLetter + '28)']);
+  
+  // Строка 29: Динамика показов (пусто)
+  columnData.push(['']);
+  
+  // Строка 30: Среднее кликов рекламы по цвету за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '30:' + weekEndColLetter + '30)']);
+  
+  // Строка 31: Среднее показов рекламы по модели за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '31:' + weekEndColLetter + '31)']);
+  
+  // Строка 32: Среднее кликов рекламы по модели за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '32:' + weekEndColLetter + '32)']);
+  
+  // Строка 33: CTR модели
+  columnData.push(['=IFERROR(' + colLetter + '32/' + colLetter + '31,0)']);
+  
+  // Строка 34: Среднее корзины за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '34:' + weekEndColLetter + '34)']);
+  
+  // Строка 35: Конверсия в корзину
+  columnData.push(['=IFERROR(' + colLetter + '34/(' + colLetter + '27+' + colLetter + '30),0)']);
+  
+  // Строка 36: Конверсия в заказ
+  columnData.push(['=IFERROR(' + colLetter + '9/' + colLetter + '34,0)']);
+  
+  // Строка 37: Общий коэффициент (пусто)
+  columnData.push(['']);
+  
+  // Строка 38: Среднее затрат на рекламу по артикулу за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '38:' + weekEndColLetter + '38)']);
+  
+  // Строка 39: Среднее затрат на рекламу по модели за неделю
+  columnData.push(['=AVERAGE(' + weekStartColLetter + '39:' + weekEndColLetter + '39)']);
+  
+  // Строка 40: CPO
+  columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '9,0)']);
+  
+  // Строка 41: CPC по артикулу
+  columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '30,0)']);
+  
+  // Строка 42: CPC по модели
+  columnData.push(['=IFERROR(' + colLetter + '39/' + colLetter + '32,0)']);
+  
+  // Строка 43: CPS по артикулу
+  columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '9*#REF!),0)']);
+  
+  // Строка 44: CPS по модели
+  columnData.push(['=IFERROR(' + colLetter + '39/(' + colLetter + '13*#REF!),0)']);
+  
+  // Строка 45: ДРР фактическая от заказа цвета на цвет
+  columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '11,0)']);
+  
+  // Строка 46: ДРР вмененная от выкупа цвета на цвет
+  columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '11*#REF!),0)']);
+  
+  // Строка 47: ДРР фактическая от выкупа цвет на цвет
+  columnData.push(['=IFERROR(' + colLetter + '38/#REF!,0)']);
+  
+  // Строка 48: ДРР вмененная от выкупа цвета на модель
+  columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '15*#REF!),0)']);
+  
+  // Строка 49: ДРР вмененная всей модели
+  columnData.push(['=IFERROR(' + colLetter + '39/(' + colLetter + '15*#REF!),0)']);
+  
+  // Строка 50: Заказов на 1 клик, руб (по модели)
+  columnData.push(['=IFERROR(' + colLetter + '15/' + colLetter + '32,0)']);
+  
+  // Записываем все данные в столбец одной операцией
+  sheet.getRange(1, col, 50, 1).setValues(columnData);
+  
+  // Применяем форматирование: зеленый фон для визуального отличия от дневных столбцов
+  var weekColumnRange = sheet.getRange(1, col, 50, 1);
+  weekColumnRange.setBackground('#d9ead3'); // Светло-зеленый фон
+  
+  // Устанавливаем рамки
+  weekColumnRange.setBorder(true, true, true, true, true, true, '#000000', SpreadsheetApp.BorderStyle.SOLID);
+  
+  Logger.log('Недельный столбец ' + colLetter + ' успешно добавлен с форматированием');
+}
+
+/**
+ * Синхронизировать недельную статистику для воронки динамики
+ * Добавляет данные за все 7 дней недели и итоговый недельный столбец
+ * @param {string} weekEndDate - Дата окончания недели (воскресенье) в формате YYYY-MM-DD
+ * @return {Object} Результат операции
+ */
+function syncSalesFunnelDynamicWeek(weekEndDate) {
+  try {
+    Logger.log('=== Начало синхронизации недельной статистики воронки динамики ===');
+    Logger.log('Дата окончания недели: ' + weekEndDate);
+    
+    // Проверяем, что указанная дата - воскресенье
+    var endDate = parseDateString(weekEndDate);
+    var dayOfWeek = endDate.getDay();
+    
+    if (dayOfWeek !== 0) { // 0 = воскресенье
+      Logger.log('ПРЕДУПРЕЖДЕНИЕ: Указанная дата не является воскресеньем (день недели: ' + dayOfWeek + ')');
+      // Корректируем на ближайшее воскресенье
+      var daysToAdd = (7 - dayOfWeek) % 7;
+      if (daysToAdd === 0) daysToAdd = 7;
+      endDate.setDate(endDate.getDate() + daysToAdd);
+      weekEndDate = Utilities.formatDate(endDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      Logger.log('Скорректированная дата (воскресенье): ' + weekEndDate);
+    }
+    
+    // Вычисляем дату начала недели (понедельник - 6 дней назад)
+    var startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6);
+    var weekStartDate = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    
+    Logger.log('Период недели: ' + weekStartDate + ' - ' + weekEndDate);
+    
+    // Добавляем столбцы для каждого дня недели
+    var currentDate = new Date(startDate);
+    var daysAdded = 0;
+    
+    for (var i = 0; i < 7; i++) {
+      var dateStr = Utilities.formatDate(currentDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      Logger.log('Добавление дневного столбца для: ' + dateStr);
+      
+      try {
+        var result = addSalesFunnelDynamicColumn(dateStr);
+        if (!result.skipped) {
+          daysAdded++;
+        }
+      } catch (error) {
+        Logger.log('Ошибка при добавлении столбца для ' + dateStr + ': ' + error.toString());
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    Logger.log('Добавлено дневных столбцов: ' + daysAdded);
+    
+    // Добавляем итоговый недельный столбец
+    Logger.log('Добавление недельного итогового столбца');
+    var weekResult = addSalesFunnelDynamicWeekColumn(weekEndDate);
+    
+    var message = 'Синхронизация недели завершена. Добавлено дневных столбцов: ' + daysAdded + 
+                  ', недельный столбец: ' + (weekResult.skipped ? 'уже существует' : 'добавлен');
+    
+    Logger.log('=== ' + message + ' ===');
+    
+    return { 
+      success: true, 
+      message: message,
+      daysAdded: daysAdded,
+      weekColumnAdded: !weekResult.skipped
+    };
+    
+  } catch (error) {
+    Logger.log('ОШИБКА при синхронизации недельной статистики: ' + error.toString());
+    Logger.log('Стек ошибки: ' + error.stack);
+    throw error;
+  }
+}
+
+/**
  * Получить имя листа для воронки динамики
  * @return {string} Имя листа
  */
