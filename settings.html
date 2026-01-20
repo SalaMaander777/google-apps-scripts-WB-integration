@@ -103,23 +103,30 @@
   </form>
   
   <script>
+    console.log('Страница настроек загружена');
+    
     // Загружаем текущие настройки при открытии окна
+    console.log('Вызов getSettings');
     google.script.run
       .withSuccessHandler(function(settings) {
+        console.log('getSettings успешно, результат:', settings);
         if (settings) {
           document.getElementById('wbApiToken').value = settings.wbApiToken || '';
         }
       })
       .withFailureHandler(function(error) {
         console.error('Ошибка загрузки настроек:', error);
+        showMessage('Ошибка загрузки настроек: ' + error.message, 'error');
       })
       .getSettings();
     
     // Обработка отправки формы
     document.getElementById('settingsForm').addEventListener('submit', function(e) {
       e.preventDefault();
+      console.log('Форма отправлена');
       
       var wbApiToken = document.getElementById('wbApiToken').value.trim();
+      console.log('API токен (длина):', wbApiToken.length);
       
       // Валидация
       if (!wbApiToken) {
@@ -127,20 +134,26 @@
         return;
       }
       
+      console.log('Вызов saveSettings');
+      
       // Сохраняем настройки
       google.script.run
         .withSuccessHandler(function(result) {
-          if (result.success) {
+          console.log('saveSettings успешно, результат:', result);
+          if (result && result.success) {
             showMessage('Настройки успешно сохранены!', 'success');
             setTimeout(function() {
               google.script.host.close();
             }, 1500);
           } else {
-            showMessage('Ошибка сохранения: ' + (result.error || 'Неизвестная ошибка'), 'error');
+            var errorMsg = result && result.error ? result.error : 'Неизвестная ошибка';
+            showMessage('Ошибка сохранения: ' + errorMsg, 'error');
           }
         })
         .withFailureHandler(function(error) {
-          showMessage('Ошибка сохранения: ' + error.message, 'error');
+          console.error('Ошибка saveSettings:', error);
+          var errorMsg = error && error.message ? error.message : 'Неизвестная ошибка';
+          showMessage('Ошибка сохранения: ' + errorMsg, 'error');
         })
         .saveSettings(wbApiToken);
     });

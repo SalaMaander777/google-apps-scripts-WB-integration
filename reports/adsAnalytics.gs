@@ -222,6 +222,60 @@ function getAdsAnalyticsHeaders() {
 }
 
 /**
+ * Форматировать строку для записи в таблицу
+ * @param {Object} campaign - Данные кампании
+ * @param {Object} stats - Статистика кампании
+ * @param {string} reportDate - Дата отчета в формате YYYY-MM-DD
+ * @return {Array} Массив значений для строки
+ */
+function formatAdsAnalyticsRow(campaign, stats, reportDate) {
+  // Получаем дату выгрузки
+  var uploadDate = reportDate;
+  if (campaign.timestamps && campaign.timestamps.updatedAt) {
+    var updatedAtDate = campaign.timestamps.updatedAt.split('T')[0];
+    uploadDate = updatedAtDate;
+  }
+  
+  // Извлекаем данные из settings
+  var campaignName = '';
+  var paymentType = '';
+  if (campaign.settings) {
+    campaignName = campaign.settings.name || '';
+    paymentType = campaign.settings.payment_type || '';
+  }
+  
+  // Преобразуем тип ставки
+  var bidTypeRu = '';
+  if (campaign.bid_type === 'unified') {
+    bidTypeRu = 'Единая ставка';
+  } else if (campaign.bid_type === 'manual') {
+    bidTypeRu = 'Ручная ставка';
+  } else {
+    bidTypeRu = campaign.bid_type || '';
+  }
+  
+  // Форматируем период
+  var periodFormatted = formatDateRu(reportDate) + ' - ' + formatDateRu(reportDate);
+  
+  var row = [
+    uploadDate,
+    bidTypeRu,
+    campaign.advertId || campaign.id || '',
+    campaignName,
+    campaign.status || '',
+    paymentType,
+    '',
+    '',
+    periodFormatted,
+    stats.views || 0,
+    stats.clicks || 0,
+    ''
+  ];
+  
+  return row;
+}
+
+/**
  * Проверить, существует ли запись для кампании и даты в листе
  * @param {Sheet} sheet - Лист
  * @param {number} campaignId - ID кампании

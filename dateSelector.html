@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    h2 {
+      color: #333;
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    input[type="date"]:focus {
+      outline: none;
+      border-color: #4285f4;
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1);
+    }
+    
+    .checkbox-group {
+      margin-bottom: 20px;
+    }
+    
+    .checkbox-item {
+      margin-bottom: 10px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    
+    .checkbox-item label {
+      display: inline;
+      font-weight: normal;
+      cursor: pointer;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .btn-primary {
+      background-color: #4285f4;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #3367d6;
+    }
+    
+    .btn-primary:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background-color: #f1f3f4;
+      color: #5f6368;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #e8eaed;
+    }
+    
+    .status {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 4px;
+      display: none;
+      font-size: 14px;
+    }
+    
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status.info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    
+    .select-all {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .note {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📅 Выбор даты для синхронизации</h2>
+    
+    <div class="form-group">
+      <label for="reportDate">Дата отчета:</label>
+      <input type="date" id="reportDate" required>
+      <div class="note">Выберите дату, за которую нужно загрузить отчеты</div>
+    </div>
+    
+    <div class="checkbox-group">
+      <div class="select-all">
+        <div class="checkbox-item">
+          <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
+          <label for="selectAll"><strong>Выбрать все отчеты</strong></label>
+        </div>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" class="report-checkbox" id="stocks" value="stocks">
+        <label for="stocks">Остатки товаров</label>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" class="report-checkbox" id="financeDaily" value="financeDaily" checked>
+        <label for="financeDaily">Ежедневные финансовые отчеты</label>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" class="report-checkbox" id="ordersFeed" value="ordersFeed" checked>
+        <label for="ordersFeed">Лента заказов</label>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" class="report-checkbox" id="adsAnalytics" value="adsAnalytics" checked>
+        <label for="adsAnalytics">Аналитика РК</label>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" class="report-checkbox" id="salesFunnel" value="salesFunnel" checked>
+        <label for="salesFunnel">Аналитика продавца</label>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" class="report-checkbox" id="funnelDynamic" value="funnelDynamic">
+        <label for="funnelDynamic">Воронка динамика (добавить столбец)</label>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button type="button" class="btn-secondary" onclick="google.script.host.close()">Отмена</button>
+      <button type="button" class="btn-primary" id="syncButton" onclick="startSync()">Синхронизировать</button>
+    </div>
+    
+    <div id="status" class="status"></div>
+  </div>
+  
+  <script>
+    // Устанавливаем вчерашнюю дату по умолчанию
+    window.onload = function() {
+      console.log('Страница загружена');
+      var today = new Date();
+      today.setDate(today.getDate() - 1);
+      var yesterday = today.toISOString().split('T')[0];
+      document.getElementById('reportDate').value = yesterday;
+      console.log('Дата по умолчанию установлена:', yesterday);
+    };
+    
+    function toggleAll(checkbox) {
+      var checkboxes = document.querySelectorAll('.report-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = checkbox.checked;
+      });
+    }
+    
+    function startSync() {
+      console.log('startSync вызвана');
+      var date = document.getElementById('reportDate').value;
+      console.log('Выбранная дата:', date);
+      
+      if (!date) {
+        showStatus('Пожалуйста, выберите дату', 'error');
+        return;
+      }
+      
+      // Собираем выбранные отчеты
+      var selectedReports = [];
+      var checkboxes = document.querySelectorAll('.report-checkbox:checked');
+      checkboxes.forEach(function(cb) {
+        selectedReports.push(cb.value);
+      });
+      
+      console.log('Выбранные отчеты:', selectedReports);
+      
+      if (selectedReports.length === 0) {
+        showStatus('Выберите хотя бы один отчет', 'error');
+        return;
+      }
+      
+      // Блокируем кнопку
+      var button = document.getElementById('syncButton');
+      button.disabled = true;
+      button.textContent = 'Синхронизация...';
+      
+      showStatus('Запуск синхронизации за ' + formatDate(date) + '...', 'info');
+      
+      console.log('Вызов серверной функции syncReportsByDate');
+      
+      // Вызываем серверную функцию
+      google.script.run
+        .withSuccessHandler(onSuccess)
+        .withFailureHandler(onError)
+        .syncReportsByDate(date, selectedReports);
+    }
+    
+    function onSuccess(result) {
+      console.log('onSuccess вызвана, результат:', result);
+      var button = document.getElementById('syncButton');
+      button.disabled = false;
+      button.textContent = 'Синхронизировать';
+      
+      if (result && result.success) {
+        showStatus('✓ Синхронизация завершена успешно! ' + result.message, 'success');
+        
+        // Закрываем диалог через 2 секунды
+        setTimeout(function() {
+          google.script.host.close();
+        }, 2000);
+      } else {
+        var errorMsg = result && result.message ? result.message : 'Неизвестная ошибка';
+        showStatus('✗ Ошибка: ' + errorMsg, 'error');
+      }
+    }
+    
+    function onError(error) {
+      console.error('onError вызвана, ошибка:', error);
+      var button = document.getElementById('syncButton');
+      button.disabled = false;
+      button.textContent = 'Синхронизировать';
+      
+      var errorMsg = error && error.message ? error.message : 'Неизвестная ошибка';
+      showStatus('✗ Ошибка выполнения: ' + errorMsg, 'error');
+      console.error('Полная ошибка:', error);
+    }
+    
+    function showStatus(message, type) {
+      var status = document.getElementById('status');
+      status.textContent = message;
+      status.className = 'status ' + type;
+      status.style.display = 'block';
+    }
+    
+    function formatDate(dateStr) {
+      var parts = dateStr.split('-');
+      return parts[2] + '.' + parts[1] + '.' + parts[0];
+    }
+  </script>
+</body>
+</html>
