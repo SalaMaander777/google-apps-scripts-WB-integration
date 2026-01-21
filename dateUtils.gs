@@ -96,3 +96,23 @@ function formatDateRu(dateStr) {
   
   return day + '.' + month + '.' + year;
 }
+
+/**
+ * Форматировать дату в американский формат M/D/YYYY (для Google Sheets)
+ * @param {string} dateStr - Дата в формате YYYY-MM-DD
+ * @return {string} Дата в формате M/D/YYYY
+ */
+function formatDateUs(dateStr) {
+  if (!dateStr) return '';
+  
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) {
+    return dateStr;
+  }
+  
+  var year = parts[0];
+  var month = parseInt(parts[1], 10); // убираем ведущий ноль
+  var day = parseInt(parts[2], 10);   // убираем ведущий ноль
+  
+  return month + '/' + day + '/' + year;
+}

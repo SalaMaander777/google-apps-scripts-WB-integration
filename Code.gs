@@ -25,6 +25,7 @@
       .addItem('Синхронизация аналитики продавца', 'manualSalesFunnelSync')
       .addSeparator()
       .addItem('Обновить воронку динамики', 'manualUpdateSalesFunnelDynamic')
+      .addItem('Применить дизайн к воронке динамики', 'manualReformatSalesFunnelDynamic')
       .addToUi();
   }
 
@@ -301,6 +302,21 @@
   */
   function manualUpdateSalesFunnelDynamic() {
     updateSalesFunnelDynamic();
+  }
+
+  /**
+  * Функция для ручного переформатирования листа "Воронка динамика"
+  * Применяет новые правила дизайна ко всем столбцам
+  */
+  function manualReformatSalesFunnelDynamic() {
+    try {
+      var result = reformatSalesFunnelDynamicSheet();
+      if (result && result.success) {
+        SpreadsheetApp.getUi().alert('Успешно: ' + result.message);
+      }
+    } catch (error) {
+      SpreadsheetApp.getUi().alert('Ошибка: ' + error.toString());
+    }
   }
 
   /**
