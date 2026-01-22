@@ -15,7 +15,21 @@
       var reportDate = getPreviousDay();
       Logger.log('Дата отчета: ' + reportDate);
       
+      // 1. Добавляем дневной столбец за вчера
       addSalesFunnelDynamicColumn(reportDate);
+      
+      // 2. Если вчера было воскресенье, автоматически добавляем недельный отчет
+      // Это происходит при запуске в понедельник утром за вчерашнее воскресенье
+      var dateObj = parseDate(reportDate);
+      if (dateObj && dateObj.getDay() === 0) { // 0 = воскресенье
+        Logger.log('Вчера было воскресенье (' + reportDate + '). Добавляем недельный отчет.');
+        try {
+          addSalesFunnelDynamicWeekColumn(reportDate);
+        } catch (weekError) {
+          Logger.log('Ошибка при добавлении недельного отчета: ' + weekError.toString());
+          // Не прерываем основное выполнение, если не удалось добавить только недельный отчет
+        }
+      }
       
       Logger.log('=== Обновление листа "Воронка динамика" завершено успешно ===');
       

@@ -11,21 +11,9 @@
     var ui = SpreadsheetApp.getUi();
     ui.createMenu('⚙️ Настройки скрипта')
       .addItem('Открыть настройки', 'showSettingsDialog')
-      .addSeparator()
       .addItem('📅 Синхронизация за дату...', 'showDateSelectorDialog')
       .addSeparator()
-      .addItem('Синхронизация всех отчетов', 'runAllDailySync')
-      .addSeparator()
-      .addItem('Синхронизация остатков', 'manualStocksSync')
-      .addItem('Синхронизация финансовых отчетов', 'manualFinanceDailySync')
-      .addItem('Синхронизация ленты заказов', 'manualOrdersFeedSync')
-      .addSeparator()
-      .addItem('Синхронизация аналитики РК', 'manualAdsAnalyticsSync')
-      .addItem('Синхронизация истории рекламных расходов', 'manualAdsCostsSync')
-      .addItem('Синхронизация аналитики продавца', 'manualSalesFunnelSync')
-      .addSeparator()
-      .addItem('Обновить воронку динамики', 'manualUpdateSalesFunnelDynamic')
-      .addItem('Применить дизайн к воронке динамики', 'manualReformatSalesFunnelDynamic')
+      .addItem('🗄️ Архивировать и очистить таблицу', 'showArchiveConfirmDialog')
       .addToUi();
   }
 
@@ -287,6 +275,13 @@
         syncSalesFunnel();
       } catch (error) {
         Logger.log('Ошибка синхронизации аналитики продавца: ' + error.toString());
+      }
+      
+      // 7. Обновление воронки динамики (добавление столбцов)
+      try {
+        updateSalesFunnelDynamic();
+      } catch (error) {
+        Logger.log('Ошибка обновления воронки динамики: ' + error.toString());
       }
       
       Logger.log('=== Ежедневная синхронизация всех отчетов завершена ===');
