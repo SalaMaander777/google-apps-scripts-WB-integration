@@ -28,7 +28,7 @@ function syncFinanceDailyReport() {
     Logger.log('Получено записей: ' + records.length);
     
     // 3. Форматируем данные для таблицы
-    var formattedData = formatFinanceData(records);
+    var formattedData = formatFinanceData(records, reportDate);
     
     // 4. Записываем в таблицу
     var sheetName = getFinanceDailySheetName();
@@ -40,7 +40,12 @@ function syncFinanceDailyReport() {
     if (isSheetEmpty(sheet)) {
       clearAndWriteSheet(sheet, headers, formattedData);
     } else {
-      // Если не пустой - дописываем в конец
+      // Перезаписываем строки за дату выгрузки по последнему столбцу
+      var deletedCount = deleteRowsByDate(sheet, reportDate, headers.length, 1);
+      if (deletedCount > 0) {
+        Logger.log('Удалено строк за дату ' + reportDate + ': ' + deletedCount);
+      }
+      // Дописываем новые данные в конец
       appendDataToSheet(sheet, formattedData);
     }
     
@@ -57,9 +62,10 @@ function syncFinanceDailyReport() {
 /**
  * Форматирует массив записей API в массив строк для таблицы согласно ТЗ
  * @param {Array<Object>} records - Массив объектов из API
+ * @param {string} reportDate - Дата выгрузки в формате YYYY-MM-DD
  * @return {Array<Array>} Массив строк для Google Sheets
  */
-function formatFinanceData(records) {
+function formatFinanceData(records, reportDate) {
   var data = [];
   
   for (var i = 0; i < records.length; i++) {
@@ -77,7 +83,7 @@ function formatFinanceData(records) {
       r.doc_type_name || '',                // 10. Тип документа
       r.supplier_oper_name || '',           // 11. Обоснование для оплаты
       r.order_dt || '',                     // 12. Дата заказа покупателем
-      r.sale_dt || '',                      // 13. Дата продажи
+      formatDateMMDDYYYY(r.sale_dt || ''),  // 13. Дата продажи (MM/DD/YYYY)
       r.quantity || 0,                      // 14. Кол-во
       r.retail_price || 0,                  // 15. Цена розничная
       r.retail_amount || 0,                 // 16. Вайлдберриз реализовал Товар (Пр)
@@ -128,7 +134,8 @@ function formatFinanceData(records) {
       r.deduction || 0,                     // 61. Удержания
       r.acceptance || 0,                    // 62. Платная приемка
       r.chrt_id || '',                      // 63. chrtId
-      r.dlv_prc || 0                        // 64. Фиксированный коэффициент склада по поставке
+      r.dlv_prc || 0,                       // 64. Фиксированный коэффициент склада по поставке
+      reportDate                            // 65. Дата выгрузки
     ];
     data.push(row);
   }
@@ -161,6 +168,6 @@ function getFinanceReportHeaders() {
     "Партнер", "Склад", "Страна", "Тип коробов", "Номер таможенной декларации", "Номер сборочного задания", 
     "Код маркировки", "ШК", "Srid", "Возмещение издержек по перевозке/по складским операциям с товаром", 
     "Организатор перевозки", "Хранение", "Удержания", "Платная приемка", "chrtId", 
-    "Фиксированный коэффициент склада по поставке"
+    "Фиксированный коэффициент склада по поставке", "Дата выгрузки"
   ];
 }

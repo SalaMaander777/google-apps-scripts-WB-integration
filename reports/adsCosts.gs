@@ -31,13 +31,7 @@ function syncAdsCosts() {
       Logger.log('Заголовки установлены');
     }
     
-    // 3. Проверяем, есть ли уже данные за эту дату
-    if (dateExistsInAdsCostsSheet(sheet, reportDate)) {
-      Logger.log('Данные за ' + reportDate + ' уже существуют. Выход.');
-      return;
-    }
-    
-    // 4. Получаем историю затрат за предыдущий день
+    // 3. Получаем историю затрат за предыдущий день
     // API требует период минимум 1 день, поэтому from = to = reportDate
     Logger.log('Запрос истории затрат за период: ' + reportDate + ' - ' + reportDate);
     var costsData = getAdvertCostsHistory(reportDate, reportDate);

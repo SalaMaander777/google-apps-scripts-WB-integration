@@ -116,3 +116,25 @@ function formatDateUs(dateStr) {
   
   return month + '/' + day + '/' + year;
 }
+
+/**
+ * Форматировать дату в американский формат MM/DD/YYYY (с ведущими нулями)
+ * @param {string} dateStr - Дата в формате YYYY-MM-DD или ISO
+ * @return {string} Дата в формате MM/DD/YYYY
+ */
+function formatDateMMDDYYYY(dateStr) {
+  if (!dateStr) return '';
+  
+  // Убираем время если есть
+  var dateOnly = dateStr.split('T')[0];
+  var parts = dateOnly.split('-');
+  if (parts.length !== 3) {
+    return dateStr;
+  }
+  
+  var year = parts[0];
+  var month = parts[1]; // сохраняем ведущий ноль
+  var day = parts[2];   // сохраняем ведущий ноль
+  
+  return month + '/' + day + '/' + year;
+}

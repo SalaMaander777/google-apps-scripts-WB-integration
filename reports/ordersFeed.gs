@@ -8,7 +8,7 @@
  */
 function getOrdersFeedHeaders() {
   return [
-    '', // Пустой первый столбец
+    'Дата выгрузки', // Столбец A - дата выгрузки для перезаписи
     '№ позиции',
     'Баркод',
     'Наименование товара',
@@ -55,7 +55,7 @@ function convertOrderToRow(order, rowNumber) {
   if (order.date) {
     var dateObj = new Date(order.date);
     if (!isNaN(dateObj.getTime())) {
-      orderDate = Utilities.formatDate(dateObj, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      orderDate = Utilities.formatDate(dateObj, Session.getScriptTimeZone(), 'MM/dd/yyyy');
       orderTime = Utilities.formatDate(dateObj, Session.getScriptTimeZone(), 'HH:mm:ss');
     }
   }
@@ -85,7 +85,7 @@ function convertOrderToRow(order, rowNumber) {
     order.supplierArticle || '', // Артикул поставщика/цвет
     order.nmId || '', // Артикул WB
     order.techSize || '', // Размер
-    order.finishedPrice || order.priceWithDisc || '', // Цена
+    order.priceWithDisc || '', // Цена
     order.warehouseName || '', // Склад отправки
     order.regionName || '', // Регион доставки
     orderDate, // Дата заказа
@@ -130,6 +130,9 @@ function syncOrdersFeed() {
       headerRange.setFontWeight('bold');
       headerRange.setBackground('#e0e0e0');
       
+      // Форматируем столбец K как дату для всех строк
+      sheet.getRange(3, 11, sheet.getMaxRows() - 2, 1).setNumberFormat('M/d/yyyy');
+      
       Logger.log('Создана структура листа с пустой строкой и заголовками');
       lastRow = 2;
     }
@@ -145,6 +148,14 @@ function syncOrdersFeed() {
     }
     
     Logger.log('Получено заказов из API: ' + orders.length);
+    
+    // Перезаписываем строки за дату отчета по столбцу K (Дата заказа)
+    // Данные начинаются со строки 3 (1 - пустая, 2 - заголовки)
+    var deletedCount = deleteRowsByDate(sheet, reportDate, 11, 2);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + reportDate + ': ' + deletedCount);
+    }
+    lastRow = sheet.getLastRow();
     
     // Получаем текущий номер последней позиции в таблице
     var startRowNumber = 1;
@@ -177,13 +188,28 @@ function syncOrdersFeed() {
     var startRow = lastRow + 1;
     sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
     
-    // Добавляем формулы в столбец КОЛ_ВО (15-й столбец, O)
+    // Форматируем столбец K (Дата заказа) как дату
+    sheet.getRange(startRow, 11, rows.length, 1).setNumberFormat('M/d/yyyy');
+    
+    // Обновляем lastRow после записи
+    lastRow = sheet.getLastRow();
+    
+    // Добавляем формулы в столбец КОЛ_ВО (15-й столбец, O) для ВСЕХ строк данных
+    // Данные начинаются со строки 3 (1 - пустая, 2 - заголовки)
     // Статус находится в 13-м столбце (M)
-    Logger.log('Добавление формул в столбец КОЛ_ВО...');
-    for (var i = 0; i < rows.length; i++) {
-      var currentRow = startRow + i;
-      var formula = '=IF(M' + currentRow + '="отменен",0,1)';
-      sheet.getRange(currentRow, 15).setFormula(formula);
+    if (lastRow > 2) {
+      Logger.log('Обновление формул в столбце КОЛ_ВО для всех строк данных...');
+      var dataRowCount = lastRow - 2; // количество строк с данными
+      var formulas = [];
+      
+      for (var i = 0; i < dataRowCount; i++) {
+        var currentRow = 3 + i; // начинаем с 3-й строки
+        formulas.push(['=IF(M' + currentRow + '="отменен",0,1)']);
+      }
+      
+      // Устанавливаем все формулы за один раз для лучшей производительности
+      sheet.getRange(3, 15, dataRowCount, 1).setFormulas(formulas);
+      Logger.log('Формулы обновлены для ' + dataRowCount + ' строк');
     }
     
     Logger.log('=== Синхронизация завершена успешно. Добавлено заказов: ' + rows.length + ' ===');

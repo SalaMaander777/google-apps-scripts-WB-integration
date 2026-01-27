@@ -46,7 +46,7 @@ function syncSalesFunnel() {
     
     Logger.log('Получено товаров: ' + allProducts.length);
     
-    // 5. Фильтруем товары, для которых уже есть данные
+    // 5. Фильтруем товары для обработки
     var productsToProcess = [];
     
     for (var i = 0; i < allProducts.length; i++) {
@@ -58,25 +58,17 @@ function syncSalesFunnel() {
         continue;
       }
       
-      var nmId = item.product.nmId;
-      
-      // Проверяем, есть ли уже данные за эту дату и товар
-      if (productAndDateExistInSheet(sheet, nmId, reportDate)) {
-        Logger.log('Данные для товара ' + nmId + ' за ' + reportDate + ' уже существуют. Пропускаем.');
-        continue;
-      }
-      
       productsToProcess.push(item);
     }
     
     if (productsToProcess.length === 0) {
-      Logger.log('Нет новых товаров для обработки');
+      Logger.log('Нет товаров для обработки');
       return;
     }
     
     Logger.log('Товаров для обработки: ' + productsToProcess.length);
     
-    // 6. Формируем данные для записи
+    // 7. Формируем данные для записи
     var dataToWrite = [];
     
     for (var i = 0; i < productsToProcess.length; i++) {
@@ -158,7 +150,13 @@ function syncSalesFunnel() {
       return;
     }
     
-    // 7. Дозаписываем данные в таблицу
+    // Перезаписываем строки за дату отчета по столбцу A (Дата)
+    var deletedCount = deleteRowsByDate(sheet, reportDate, 1, 1);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + reportDate + ': ' + deletedCount);
+    }
+    
+    // 8. Дозаписываем данные в таблицу
     appendDataToSheet(sheet, dataToWrite);
     
     Logger.log('=== Синхронизация завершена успешно. Записано строк: ' + dataToWrite.length + ' ===');

@@ -31,11 +31,6 @@ function syncFinanceDailyReportByDate(date) {
     }
     
     // Проверяем, есть ли уже данные за эту дату
-    if (dateExistsInSheet(sheet, date, 13)) { // Столбец M (13) - дата продажи
-      Logger.log('Данные за ' + date + ' уже существуют. Пропускаем.');
-      return;
-    }
-    
     // Получаем данные из API
     var dateRange = {
       dateFrom: date + 'T00:00:00+03:00',
@@ -50,11 +45,18 @@ function syncFinanceDailyReportByDate(date) {
     }
     
     // Форматируем данные для таблицы  
-    var data = formatFinanceData(records);
+    var data = formatFinanceData(records, date);
     
     if (!data || data.length === 0) {
       Logger.log('Нет данных за ' + date);
       return;
+    }
+    
+    // Перезаписываем строки за дату выгрузки по последнему столбцу
+    var headers = getFinanceReportHeaders();
+    var deletedCount = deleteRowsByDate(sheet, date, headers.length, 1);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + date + ': ' + deletedCount);
     }
     
     // Дозаписываем данные
@@ -80,18 +82,30 @@ function syncOrdersFeedByDate(date) {
     var sheetName = getOrdersFeedSheetName();
     var sheet = getOrCreateSheet(sheetName);
     
-    // Устанавливаем заголовки если лист пустой
-    if (isSheetEmpty(sheet)) {
+    // Инициализация структуры листа если он пуст
+    var lastRow = sheet.getLastRow();
+    if (lastRow === 0) {
+      // Добавляем пустую строку в строке 1
+      sheet.getRange(1, 1).setValue('');
+      
+      // Устанавливаем заголовки в строке 2
       var headers = getOrdersFeedHeaders();
-      setSheetHeaders(sheet, headers);
+      sheet.getRange(2, 1, 1, headers.length).setValues([headers]);
+      
+      // Форматирование заголовков
+      var headerRange = sheet.getRange(2, 1, 1, headers.length);
+      headerRange.setFontWeight('bold');
+      headerRange.setBackground('#e0e0e0');
+      
+      // Форматируем столбец K как дату для всех строк
+      sheet.getRange(3, 11, sheet.getMaxRows() - 2, 1).setNumberFormat('M/d/yyyy');
+      
+      Logger.log('Создана структура листа с пустой строкой и заголовками');
+      lastRow = 2;
     }
     
     // Получаем данные из API
-    var dateRange = {
-      dateFrom: date + 'T00:00:00+03:00',
-      dateTo: date + 'T23:59:59+03:00'
-    };
-    
+    Logger.log('Загрузка заказов из API Wildberries...');
     var orders = getOrders(date, 1);
     
     if (!orders || orders.length === 0) {
@@ -99,10 +113,22 @@ function syncOrdersFeedByDate(date) {
       return;
     }
     
+    Logger.log('Получено заказов из API: ' + orders.length);
+    
+    // Перезаписываем строки за указанную дату по столбцу K (Дата заказа)
+    // Данные начинаются со строки 3 (1 - пустая, 2 - заголовки)
+    var deletedCount = deleteRowsByDate(sheet, date, 11, 2);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + date + ': ' + deletedCount);
+    }
+    lastRow = sheet.getLastRow();
+    
     // Получаем текущий номер последней позиции в таблице
-    var lastRow = sheet.getLastRow();
     var startRowNumber = 1;
     
+    // Если в таблице уже есть данные, находим максимальный номер позиции
+    // Данные начинаются со строки 3 (1 - пустая, 2 - заголовки)
+    // Номер позиции находится во 2-м столбце (B)
     if (lastRow > 2) {
       var positionColumn = sheet.getRange(3, 2, lastRow - 2, 1).getValues();
       var maxPosition = 0;
@@ -128,13 +154,40 @@ function syncOrdersFeedByDate(date) {
       return;
     }
     
-    // Дозаписываем данные
-    appendDataToSheet(sheet, data);
+    // Записываем данные в таблицу
+    Logger.log('Запись данных в таблицу...');
+    var startRow = lastRow + 1;
+    sheet.getRange(startRow, 1, data.length, data[0].length).setValues(data);
     
-    Logger.log('=== Синхронизация ленты заказов завершена. Записано строк: ' + data.length + ' ===');
+    // Форматируем столбец K (Дата заказа) как дату
+    sheet.getRange(startRow, 11, data.length, 1).setNumberFormat('M/d/yyyy');
+    
+    // Обновляем lastRow после записи
+    lastRow = sheet.getLastRow();
+    
+    // Добавляем формулы в столбец КОЛ_ВО (15-й столбец, O) для ВСЕХ строк данных
+    // Данные начинаются со строки 3 (1 - пустая, 2 - заголовки)
+    // Статус находится в 13-м столбце (M)
+    if (lastRow > 2) {
+      Logger.log('Обновление формул в столбце КОЛ_ВО для всех строк данных...');
+      var dataRowCount = lastRow - 2; // количество строк с данными
+      var formulas = [];
+      
+      for (var i = 0; i < dataRowCount; i++) {
+        var currentRow = 3 + i; // начинаем с 3-й строки
+        formulas.push(['=IF(M' + currentRow + '="отменен",0,1)']);
+      }
+      
+      // Устанавливаем все формулы за один раз для лучшей производительности
+      sheet.getRange(3, 15, dataRowCount, 1).setFormulas(formulas);
+      Logger.log('Формулы обновлены для ' + dataRowCount + ' строк');
+    }
+    
+    Logger.log('=== Синхронизация ленты заказов завершена. Добавлено заказов: ' + data.length + ' ===');
     
   } catch (error) {
     Logger.log('ОШИБКА при синхронизации ленты заказов: ' + error.toString());
+    Logger.log('Стек ошибки: ' + error.stack);
     throw error;
   }
 }
@@ -189,12 +242,6 @@ function syncAdsAnalyticsByDate(date) {
       }
       
       var campaignId = campaign.id || campaign.advertId;
-      
-      // Проверяем, есть ли уже данные для этой кампании за эту дату
-      if (campaignAndDateExistInSheet(sheet, campaignId, date)) {
-        Logger.log('Данные для кампании ' + campaignId + ' за ' + date + ' уже существуют. Пропускаем.');
-        continue;
-      }
       
       campaignsToProcess.push(campaign);
       campaignIds.push(campaignId);
@@ -266,6 +313,12 @@ function syncAdsAnalyticsByDate(date) {
     if (dataToWrite.length === 0) {
       Logger.log('Нет новых данных для записи');
       return;
+    }
+    
+    // Перезаписываем строки за указанную дату по столбцу A (Дата выгрузки)
+    var deletedCount = deleteRowsByDate(sheet, date, 1, 1);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + date + ': ' + deletedCount);
     }
     
     // Записываем данные
@@ -427,6 +480,12 @@ function syncSalesFunnelByDate(date) {
     
     Logger.log('Получено товаров: ' + allProducts.length);
     
+    // Перезаписываем строки за указанную дату по столбцу A (Дата)
+    var deletedCount = deleteRowsByDate(sheet, date, 1, 1);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + date + ': ' + deletedCount);
+    }
+    
     // Фильтруем товары, для которых уже есть данные
     var productsToProcess = [];
     
@@ -435,13 +494,6 @@ function syncSalesFunnelByDate(date) {
       
       if (!item.product || !item.product.nmId) {
         Logger.log('Пропускаем элемент без product.nmId');
-        continue;
-      }
-      
-      var nmId = item.product.nmId;
-      
-      if (productAndDateExistInSheet(sheet, nmId, date)) {
-        Logger.log('Данные для товара ' + nmId + ' за ' + date + ' уже существуют. Пропускаем.');
         continue;
       }
       

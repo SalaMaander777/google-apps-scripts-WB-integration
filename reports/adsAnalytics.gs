@@ -57,12 +57,6 @@ function syncAdsAnalytics() {
         continue;
       }
       
-      // Проверяем, есть ли уже данные за эту дату и кампанию
-      if (campaignAndDateExistInSheet(sheet, campaign.id, reportDate)) {
-        Logger.log('Данные для кампании ' + campaign.id + ' за ' + reportDate + ' уже существуют. Пропускаем.');
-        continue;
-      }
-      
       campaignsToProcess.push(campaign);
       campaignIds.push(campaign.id);
     }
@@ -74,7 +68,7 @@ function syncAdsAnalytics() {
     
     Logger.log('Кампаний для обработки: ' + campaignsToProcess.length);
     
-    // 5. Получаем статистику по кампаниям за предыдущий день
+    // 6. Получаем статистику по кампаниям за предыдущий день
     // API имеет лимит 3 запроса в минуту, поэтому обрабатываем батчами по 50
     var allStats = [];
     var batchSize = 50;
@@ -103,7 +97,7 @@ function syncAdsAnalytics() {
     
     Logger.log('Всего получено статистик: ' + allStats.length);
     
-    // 6. Создаем карту статистик по ID кампании для быстрого доступа
+    // 7. Создаем карту статистик по ID кампании для быстрого доступа
     var statsMap = {};
     for (var i = 0; i < allStats.length; i++) {
       var stat = allStats[i];
@@ -112,7 +106,7 @@ function syncAdsAnalytics() {
       }
     }
     
-    // 7. Формируем данные для записи
+    // 8. Формируем данные для записи
     var dataToWrite = [];
     
     for (var i = 0; i < campaignsToProcess.length; i++) {
@@ -177,11 +171,17 @@ function syncAdsAnalytics() {
       return;
     }
     
-    // 8. Дозаписываем данные в таблицу
+    // Перезаписываем строки за дату отчета по столбцу A (Дата выгрузки)
+    var deletedCount = deleteRowsByDate(sheet, reportDate, 1, 1);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + reportDate + ': ' + deletedCount);
+    }
+    
+    // 9. Дозаписываем данные в таблицу
     var startRow = sheet.getLastRow() + 1;
     appendDataToSheet(sheet, dataToWrite);
     
-    // 9. Добавляем формулы в столбцы H (Финиш) и L (АРТ)
+    // 10. Добавляем формулы в столбцы H (Финиш) и L (АРТ)
     var endRow = sheet.getLastRow();
     for (var rowNum = startRow; rowNum <= endRow; rowNum++) {
       // Формула для столбца H (Финиш): =K/J
