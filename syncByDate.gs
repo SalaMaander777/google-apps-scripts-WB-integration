@@ -366,10 +366,10 @@ function syncAdsCostsByDate(date) {
       Logger.log('Заголовки установлены');
     }
     
-    // Проверяем, есть ли уже данные за эту дату
-    if (dateExistsInSheet(sheet, date, 4)) { // Столбец D (4) - дата
-      Logger.log('Данные за ' + date + ' уже существуют. Пропускаем.');
-      return;
+    // Перезаписываем строки за указанную дату по столбцу D (Дата)
+    var deletedCount = deleteRowsByDate(sheet, date, 4, 1);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + date + ': ' + deletedCount);
     }
     
     // Получаем данные из API
@@ -396,6 +396,9 @@ function syncAdsCostsByDate(date) {
     
     var campaignInfoMap = getCampaignInfoMap(campaignIds);
     
+    // Номер последней строки перед записью (для подстановки в формулы)
+    lastRow = sheet.getLastRow();
+    
     // Форматируем данные
     var costsData = [];
     for (var i = 0; i < costsDataRaw.length; i++) {
@@ -405,14 +408,25 @@ function syncAdsCostsByDate(date) {
       if (cost.updTime) {
         try {
           var updDate = new Date(cost.updTime);
-          updTimeFormatted = Utilities.formatDate(updDate, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+          updTimeFormatted = Utilities.formatDate(updDate, Session.getScriptTimeZone(), 'HH:mm:ss');
         } catch (e) {
           updTimeFormatted = cost.updTime;
         }
       }
       
       var campaignInfo = campaignInfoMap[cost.advertId] || {};
-      var bidType = campaignInfo.bid_type || '';
+      var bidType = '';
+      if (campaignInfo.bid_type === 'unified') {
+        bidType = 'Единая ставка';
+      } else if (campaignInfo.bid_type === 'manual') {
+        bidType = 'Ручная ставка';
+      } else {
+        bidType = campaignInfo.bid_type || '';
+      }
+      
+      // Формула VLOOKUP по ID кампании (столбец A)
+      var formulaRow = lastRow + 1 + i;
+      var vlookupFormula = "=VLOOKUP(A" + formulaRow + ",'ID-АРТ'!A:B,2,0)";
       
       var row = [
         cost.advertId || '',
@@ -422,7 +436,8 @@ function syncAdsCostsByDate(date) {
         updTimeFormatted,
         cost.paymentType || '',
         (cost.updSum || 0) / 100,
-        cost.docNumber || ''
+        cost.updNum || 0,              // Номер документа (если пустой — 0)
+        vlookupFormula                 // Артикул из листа ID-АРТ
       ];
       
       costsData.push(row);

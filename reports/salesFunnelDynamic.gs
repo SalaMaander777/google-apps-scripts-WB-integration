@@ -383,6 +383,19 @@
     var dateRange = sheet.getRange(7, col, 2, 1);
     dateRange.setNumberFormat('dd.mm.yyyy');
     
+    // Числовой формат для строк с числами (заказы, суммы, показы, клики, затраты и т.д.)
+    var numberRows = [9, 11, 13, 15, 17, 18, 19, 22, 23, 27, 28, 30, 31, 32, 34, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50];
+    for (var r = 0; r < numberRows.length; r++) {
+      sheet.getRange(numberRows[r], col).setNumberFormat('#,##0.00');
+    }
+    // Процентный формат для строк с процентами (динамика, доля, % выкупа, CTR, конверсия)
+    var percentRows = [10, 12, 14, 16, 20, 21, 24, 25, 26, 29, 33, 35, 36];
+    for (var p = 0; p < percentRows.length; p++) {
+      sheet.getRange(percentRows[p], col).setNumberFormat('0.00%');
+    }
+    // Строка 37 — общий коэффициент: число
+    sheet.getRange(37, col).setNumberFormat('#,##0.00');
+    
     // Применяем форматирование для дневного столбца
     // Сначала очищаем фон и УБИРАЕМ ВСЕ РАМКИ со всего столбца (с 1 по 50 строку)
     var fullColumnRange = sheet.getRange(1, col, 50, 1);
@@ -409,21 +422,32 @@
     // 24 и 25 строка: серый
     sheet.getRange(24, col, 2, 1).setBackground('#d9d9d9');
     
-    // 27, 28 и 30 строка: светло-голубой
-    sheet.getRange(27, col, 2, 1).setBackground('#d0e0e3');
-    sheet.getRange(30, col).setBackground('#d0e0e3');
+    // 27-30: светло-голубой(3)
+    sheet.getRange(27, col, 4, 1).setBackground('#d0e0e3');
     
-    // 31 и 32 строка: средне-зеленый
-    sheet.getRange(31, col, 2, 1).setBackground('#92d050');
+    // 31-33: светло-зеленый(1)
+    sheet.getRange(31, col, 3, 1).setBackground('#d9ead3');
     
-    // 40 строка: светло-голубой
-    sheet.getRange(40, col).setBackground('#d0e0e3');
+    // 40-41: светло-бирюзовый(3)
+    sheet.getRange(40, col, 2, 1).setBackground('#b2dfdb');
     
-    // 43, 44, 45, 46 строки: персиковый
-    sheet.getRange(43, col, 4, 1).setBackground('#fce5cd');
+    // 42: светло-голубой(3)
+    sheet.getRange(42, col).setBackground('#d0e0e3');
     
-    // 47 строка: светло-зеленый
-    sheet.getRange(47, col).setBackground('#d9ead3');
+    // 43-44: светло-бирюзовый(3)
+    sheet.getRange(43, col, 2, 1).setBackground('#b2dfdb');
+    
+    // 45: светло-оранжевый(3)
+    sheet.getRange(45, col).setBackground('#ffcc80');
+    
+    // 46: светло-оранжевый(2)
+    sheet.getRange(46, col).setBackground('#ffe0b2');
+    
+    // 47-48: светло-оранжевый(3)
+    sheet.getRange(47, col, 2, 1).setBackground('#ffcc80');
+    
+    // 49: светло-зеленый(3)
+    sheet.getRange(49, col).setBackground('#b6d7a8');
     // -----------------------------------------------------
     
     Logger.log('Столбец ' + colLetter + ' успешно добавлен');
@@ -815,14 +839,24 @@
     var dateRange = sheet.getRange(7, col, 2, 1);
     dateRange.setNumberFormat('dd.mm.yyyy');
     
+    // Числовой формат для недельного столбца (средние заказы, суммы, показы, клики, затраты и т.д.)
+    var numberRowsWeekly = [9, 11, 13, 15, 17, 18, 27, 28, 30, 31, 32, 34, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50];
+    for (var r = 0; r < numberRowsWeekly.length; r++) {
+      sheet.getRange(numberRowsWeekly[r], col).setNumberFormat('#,##0.00');
+    }
+    // Процентный формат для строк с процентами (доля, % выкупа, CTR, конверсия)
+    var percentRowsWeekly = [16, 24, 25, 26, 33, 35, 36];
+    for (var p = 0; p < percentRowsWeekly.length; p++) {
+      sheet.getRange(percentRowsWeekly[p], col).setNumberFormat('0.00%');
+    }
+    
     // Применяем форматирование: недельный отчет теперь имеет такие же цвета, как дневной
     // Сначала очищаем фон и УБИРАЕМ ВСЕ РАМКИ со всего столбца (с 1 по 50 строку)
     var fullColumnRange = sheet.getRange(1, col, 50, 1);
     fullColumnRange.setBackground('#ffffff');
     fullColumnRange.setBorder(false, false, false, false, false, false);
     
-    // --- НОВОЕ ФОРМАТИРОВАНИЕ ПО ЗАПРОСУ (ТОЧНО ПО ФОТО) ---
-    // 7 и 8 строка: цвет c5e0b3 и ЖИРНАЯ РАМКА
+    
     var range7_8 = sheet.getRange(7, col, 2, 1);
     range7_8.setBackground('#c5e0b3');
     // Устанавливаем рамку только для дат (внешнюю и внутреннюю горизонтальную)
@@ -842,24 +876,42 @@
     // 24 и 25 строка: серый
     sheet.getRange(24, col, 2, 1).setBackground('#d9d9d9');
     
-    // 27, 28 и 30 строка: светло-голубой
-    sheet.getRange(27, col, 2, 1).setBackground('#d0e0e3');
-    sheet.getRange(30, col).setBackground('#d0e0e3');
+    // 27-30: светло-голубой(3)
+    sheet.getRange(27, col, 4, 1).setBackground('#d0e0e3');
     
-    // 31 и 32 строка: средне-зеленый
-    sheet.getRange(31, col, 2, 1).setBackground('#92d050');
+    // 31-33: светло-зеленый(1)
+    sheet.getRange(31, col, 3, 1).setBackground('#d9ead3');
     
-    // 40 строка: светло-голубой
-    sheet.getRange(40, col).setBackground('#d0e0e3');
+    // 40-41: светло-бирюзовый(3)
+    sheet.getRange(40, col, 2, 1).setBackground('#b2dfdb');
     
-    // 43, 44, 45, 46 строки: персиковый
-    sheet.getRange(43, col, 4, 1).setBackground('#fce5cd');
+    // 42: светло-голубой(3)
+    sheet.getRange(42, col).setBackground('#d0e0e3');
     
-    // 47 строка: светло-зеленый
-    sheet.getRange(47, col).setBackground('#d9ead3');
+    // 43-44: светло-бирюзовый(3)
+    sheet.getRange(43, col, 2, 1).setBackground('#b2dfdb');
     
-    // Недельный отчет выделяется в одну общую самую толстую рамку (строки 7-50)
-    sheet.getRange(7, col, 44, 1).setBorder(true, true, true, true, null, null, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+    // 45: светло-оранжевый(3)
+    sheet.getRange(45, col).setBackground('#ffe0b2');
+    
+    // 46: светло-оранжевый(2)
+    sheet.getRange(46, col).setBackground('#ffcc80');
+    // 47-48: светло-оранжевый(3)
+    sheet.getRange(47, col, 2, 1).setBackground('#ffe0b2');
+    
+    // 49: светло-зеленый(3)
+    sheet.getRange(49, col).setBackground('#b6d7a8');
+    
+    // Недельный отчет: только внешняя рамка (7-50), без внутренних линий между ячейками. Внутренние горизонтали — только под строками 7 и 8.
+    if (col < sheet.getMaxColumns()) {
+      sheet.getRange(7, col, 44, 2).setBorder(true, true, true, false, false, true, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(7, col, 1, 2).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(8, col, 1, 2).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+    } else {
+      sheet.getRange(7, col, 44, 1).setBorder(true, true, true, true, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(7, col, 1, 1).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(8, col, 1, 1).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+    }
     // -----------------------------------------------------
     
     Logger.log('Недельный столбец ' + colLetter + ' успешно добавлен с форматированием');
@@ -974,6 +1026,7 @@
       // Читаем все даты из строк 7 и 8 для определения типа столбцов
       var startDatesRow = sheet.getRange(7, 2, 1, lastCol - 1).getValues()[0];
       var endDatesRow = sheet.getRange(8, 2, 1, lastCol - 1).getValues()[0];
+      var weeklyCols = [];
       
       // Обрабатываем каждый столбец
       for (var i = 0; i < startDatesRow.length; i++) {
@@ -983,13 +1036,14 @@
         
         var isWeekly = false;
         if (startDate && endDate) {
-          // Если это объекты Date
           if (startDate instanceof Date && endDate instanceof Date) {
             isWeekly = startDate.getTime() !== endDate.getTime();
           } else {
-            // Если это строки
             isWeekly = String(startDate) !== String(endDate);
           }
+        }
+        if (isWeekly) {
+          weeklyCols.push(col);
         }
         
         // 1. Применяем базовый фон и рамки
@@ -1018,25 +1072,99 @@
         // 6. 24 и 25 строка: серый
         sheet.getRange(24, col, 2, 1).setBackground('#d9d9d9');
         
-        // 7. 27, 28 и 30 строка: светло-голубой
-        sheet.getRange(27, col, 2, 1).setBackground('#d0e0e3');
-        sheet.getRange(30, col).setBackground('#d0e0e3');
+        // 7. 27-30: светло-голубой(3)
+        sheet.getRange(27, col, 4, 1).setBackground('#d0e0e3');
         
-        // 8. 31 и 32 строка: средне-зеленый
-        sheet.getRange(31, col, 2, 1).setBackground('#92d050');
+        // 8. 31-33: светло-зеленый(1)
+        sheet.getRange(31, col, 3, 1).setBackground('#d9ead3');
         
-        // 9. 40 строка: светло-голубой
-        sheet.getRange(40, col).setBackground('#d0e0e3');
+        // 9. 40-41: светло-бирюзовый(3)
+        sheet.getRange(40, col, 2, 1).setBackground('#b2dfdb');
         
-        // 10. 43, 44, 45, 46 строки: персиковый
-        sheet.getRange(43, col, 4, 1).setBackground('#fce5cd');
+        // 10. 42: светло-голубой(3)
+        sheet.getRange(42, col).setBackground('#d0e0e3');
         
-        // 11. 47 строка: светло-зеленый
-        sheet.getRange(47, col).setBackground('#d9ead3');
+        // 11. 43-44: светло-бирюзовый(3)
+        sheet.getRange(43, col, 2, 1).setBackground('#b2dfdb');
         
-        // Дополнительно для недельных отчетов: выделяем в одну общую самую толстую рамку (7-50)
+        // 12. 45: светло-оранжевый(3), 46: светло-оранжевый(2), 47-48: светло-оранжевый(3)
+        sheet.getRange(45, col).setBackground('#ffcc80');
+        sheet.getRange(46, col).setBackground('#ffe0b2');
+        sheet.getRange(47, col, 2, 1).setBackground('#ffcc80');
+        
+        // 13. 49: светло-зеленый(3)
+        sheet.getRange(49, col).setBackground('#b6d7a8');
+        
+        // Форматы чисел: дата в 7–8, числа и проценты по типам строк
+        sheet.getRange(7, col, 8, col).setNumberFormat('dd.mm.yyyy');
+        var numberRowsAll = [9, 11, 13, 15, 17, 18, 19, 22, 23, 27, 28, 30, 31, 32, 34, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50];
+        for (var r = 0; r < numberRowsAll.length; r++) {
+          sheet.getRange(numberRowsAll[r], col).setNumberFormat('#,##0.00');
+        }
+        var percentRowsAll = [10, 12, 14, 16, 20, 21, 24, 25, 26, 29, 33, 35, 36];
+        for (var p = 0; p < percentRowsAll.length; p++) {
+          sheet.getRange(percentRowsAll[p], col).setNumberFormat('0.00%');
+        }
+        
+        // Дополнительно для недельных: только внешняя рамка (7-50), внутренние горизонтали только под строками 7 и 8
         if (isWeekly) {
-          sheet.getRange(7, col, 44, 1).setBorder(true, true, true, true, null, null, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+          if (col < sheet.getMaxColumns()) {
+                      // Внешняя рамка только для текущего столбца (7–50)
+            sheet.getRange(7, col, 44, 1).setBorder(
+              true, true, true, false,
+              false, false,
+              '#000000',
+              SpreadsheetApp.BorderStyle.SOLID_THICK
+            );
+
+            // 7 строка — жирная нижняя НА ДВА СТОЛБЦА
+            sheet.getRange(7, col, 1, 2).setBorder(
+              false, false, true, false,
+              false, false,
+              '#000000',
+              SpreadsheetApp.BorderStyle.SOLID_THICK
+            );
+
+            // 8 строка — жирная нижняя НА ДВА СТОЛБЦА
+            sheet.getRange(8, col, 1, 2).setBorder(
+              false, false, true, false,
+              false, false,
+              '#000000',
+              SpreadsheetApp.BorderStyle.SOLID_THICK
+  );
+
+          } else {
+                    // Внешняя рамка для текущего столбца (7–50)
+            sheet.getRange(7, col, 44, 1).setBorder(
+              true, true, true, true,
+              false, false,
+              '#000000',
+              SpreadsheetApp.BorderStyle.SOLID_THICK
+            );
+
+            // Последний столбец — 7 и 8 строки только в нём
+            sheet.getRange(7, col, 1, 1).setBorder(
+              false, false, true, false,
+              false, false,
+              '#000000',
+              SpreadsheetApp.BorderStyle.SOLID_THICK
+            );
+
+            sheet.getRange(8, col, 1, 1).setBorder(
+              false, false, true, false,
+              false, false,
+              '#000000',
+              SpreadsheetApp.BorderStyle.SOLID_THICK
+            );
+          }
+        }
+      }
+      
+      // После цикла при очистке col+1 могла сброситься правая граница недельного столбца — дорисовываем левую границу у col+1
+      for (var w = 0; w < weeklyCols.length; w++) {
+        var c = weeklyCols[w];
+        if (c < sheet.getMaxColumns()) {
+          sheet.getRange(7, c + 1, 44, 1).setBorder(false, true, false, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
         }
       }
       

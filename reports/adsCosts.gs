@@ -31,6 +31,13 @@ function syncAdsCosts() {
       Logger.log('Заголовки установлены');
     }
     
+    // Перезаписываем строки за дату отчета (столбец D — Дата)
+    var deletedCount = deleteRowsByDate(sheet, reportDate, 4, 1);
+    if (deletedCount > 0) {
+      Logger.log('Удалено строк за дату ' + reportDate + ': ' + deletedCount);
+    }
+    lastRow = sheet.getLastRow();
+    
     // 3. Получаем историю затрат за предыдущий день
     // API требует период минимум 1 день, поэтому from = to = reportDate
     Logger.log('Запрос истории затрат за период: ' + reportDate + ' - ' + reportDate);
@@ -72,18 +79,29 @@ function syncAdsCosts() {
         try {
           // updTime приходит в формате ISO: "2023-08-01T12:34:56Z"
           var updDate = new Date(cost.updTime);
-          updTimeFormatted = Utilities.formatDate(updDate, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+          updTimeFormatted = Utilities.formatDate(updDate, Session.getScriptTimeZone(), 'HH:mm:ss');
         } catch (e) {
           Logger.log('Ошибка парсинга updTime: ' + cost.updTime + ', ошибка: ' + e.toString());
           updTimeFormatted = cost.updTime;
         }
       }
       
-      // Получаем bid_type из карты кампаний
+      // Получаем bid_type из карты кампаний (перевод на русский как в Аналитике РК)
       var campaignInfo = campaignInfoMap[cost.advertId] || {};
-      var bidType = campaignInfo.bid_type || '';
+      var bidType = '';
+      if (campaignInfo.bid_type === 'unified') {
+        bidType = 'Единая ставка';
+      } else if (campaignInfo.bid_type === 'manual') {
+        bidType = 'Ручная ставка';
+      } else {
+        bidType = campaignInfo.bid_type || '';
+      }
       
-      // Новый порядок столбцов: ID кампании, Название, Раздел (bid_type), Дата, Списания, Источник списания, Сумма, Номер документа
+      // Номер строки для формулы VLOOKUP (столбец A на листе)
+      var formulaRow = lastRow + 1 + i;
+      var vlookupFormula = "=VLOOKUP(A" + formulaRow + ",'ID-АРТ'!A:B,2,0)";
+
+      // Порядок столбцов: ID кампании, Название, Раздел (bid_type), Дата, Списания, Источник списания, Сумма, Номер документа, Артикул (VLOOKUP)
       var row = [
         cost.advertId || '',           // 1. ID кампании
         cost.campName || '',           // 2. Название кампании
@@ -92,9 +110,10 @@ function syncAdsCosts() {
         updTimeFormatted,              // 5. Списания (время списания)
         cost.paymentType || '',        // 6. Источник списания
         (cost.updSum || 0) / 100,      // 7. Сумма (в рублях)
-        cost.updNum || ''              // 8. Номер документа
+        cost.updNum || 0,              // 8. Номер документа (если пустой — 0)
+        vlookupFormula                 // 9. Артикул из листа ID-АРТ
       ];
-      
+
       dataToWrite.push(row);
     }
     
@@ -128,7 +147,8 @@ function getAdsCostsHeaders() {
     'Списания',
     'Источник списания',
     'Сумма',
-    'Номер документа'
+    'Номер документа',
+    'Артикул'
   ];
 }
 

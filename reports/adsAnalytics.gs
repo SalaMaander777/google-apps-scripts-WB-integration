@@ -160,7 +160,16 @@ function syncAdsAnalytics() {
         periodFormatted,                                 // I. Выбранный период
         stats.views || 0,                                // J. Показы
         stats.clicks || 0,                               // K. Клики
-        ''                                               // L. АРТ (формула будет добавлена отдельно)
+        '',                                              // L. АРТ (формула будет добавлена отдельно)
+        stats.atbs != null ? stats.atbs : 0,             // M. Добавления в корзину
+        stats.canceled != null ? stats.canceled : 0,    // N. Отмены, шт.
+        stats.cpc != null ? stats.cpc : 0,               // O. Ср. стоимость клика, ₽
+        stats.cr != null ? stats.cr : 0,                 // P. CR, %
+        stats.ctr != null ? stats.ctr : 0,               // Q. CTR, %
+        stats.orders != null ? stats.orders : 0,        // R. Заказы
+        stats.shks != null ? stats.shks : 0,             // S. Заказано товаров, шт.
+        stats.sum != null ? stats.sum : 0,               // T. Затраты, ₽
+        stats.sum_price != null ? stats.sum_price : 0    // U. Сумма заказов, ₽
       ];
       
       dataToWrite.push(row);
@@ -217,7 +226,16 @@ function getAdsAnalyticsHeaders() {
     'Выбранный период',
     'Показы',
     'Клики',
-    'АРТ'
+    'АРТ',
+    'Добавления в корзину',
+    'Отмены, шт.',
+    'Ср. стоимость клика, ₽',
+    'CR, %',
+    'CTR, %',
+    'Заказы',
+    'Заказано товаров, шт.',
+    'Затраты, ₽',
+    'Сумма заказов, ₽'
   ];
 }
 
@@ -269,9 +287,18 @@ function formatAdsAnalyticsRow(campaign, stats, reportDate) {
     periodFormatted,
     stats.views || 0,
     stats.clicks || 0,
-    ''
+    '',
+    stats.atbs != null ? stats.atbs : 0,
+    stats.canceled != null ? stats.canceled : 0,
+    stats.cpc != null ? stats.cpc : 0,
+    stats.cr != null ? stats.cr : 0,
+    stats.ctr != null ? stats.ctr : 0,
+    stats.orders != null ? stats.orders : 0,
+    stats.shks != null ? stats.shks : 0,
+    stats.sum != null ? stats.sum : 0,
+    stats.sum_price != null ? stats.sum_price : 0
   ];
-  
+
   return row;
 }
 
