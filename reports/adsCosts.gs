@@ -109,7 +109,7 @@ function syncAdsCosts() {
         reportDate,                    // 4. Дата
         updTimeFormatted,              // 5. Списания (время списания)
         cost.paymentType || '',        // 6. Источник списания
-        (cost.updSum || 0) / 100,      // 7. Сумма (в рублях)
+        cost.updSum || 0 ,             // 7. Сумма (в рублях)
         cost.updNum || 0,              // 8. Номер документа (если пустой — 0)
         vlookupFormula                 // 9. Артикул из листа ID-АРТ
       ];

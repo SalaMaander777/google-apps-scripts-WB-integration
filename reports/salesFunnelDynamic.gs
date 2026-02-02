@@ -233,7 +233,7 @@
     // Получаем букву столбца для использования в формулах
     var colLetter = getColumnLetter(col);
     
-    // Массив для хранения всех значений столбца (50 строк)
+    // Массив для хранения всех значений столбца (58 строк)
     var columnData = [];
     
     // Строки 1-6: служебная информация (пустые для нового столбца)
@@ -267,7 +267,7 @@
     columnData.push(['=IFERROR(' + colLetter + '13/' + prevColLetter + '13-1,0)']);
     
     // Строка 15: Сумма заказов по модели в руб
-    columnData.push(['=SUMIFS(\'Лента заказов\'!$H:$H,\'Лента заказов\'!$E:$E,"*"&$A$4&"*",\'Лента заказов\'!$K:$K,">="&' + colLetter + '7,\'Лента заказов\'!$K:$K,"<="&' + colLetter + '8)']);
+    columnData.push(['=SUMIFS(\'Аналитика продавца\'!$Y:$Y,\'Аналитика продавца\'!$B:$B,"*"&$A$4&"*",\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
     
     // Строка 16: Доля заказов артикула в группе по модели
     columnData.push(['=IFERROR(' + colLetter + '11/' + colLetter + '15,0)']);
@@ -316,93 +316,104 @@
     // Строка 30: Клики реклама по цвету
     columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
     
-    // Строка 31: Показы реклама по модели
-    columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    // Строка 31: Сумма показов РК по артикулу (Аналитика РК M)
+    columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    // Строка 32: Сумма кликов РК по артикулу (Аналитика РК S)
+    columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    // Строка 33: (43/58 в новой структуре)
+    columnData.push(['=IFERROR(' + colLetter + '46/' + colLetter + '32,0)']);
+    // Строка 34: (58/57)
+    columnData.push(['=IFERROR(' + colLetter + '32/' + colLetter + '31,0)']);
+    // Строка 35: (58/37)
+    columnData.push(['=IFERROR(' + colLetter + '31/' + colLetter + '37,0)']);
     
-    // Строка 32: Клики реклама по модели
+    // Строка 36: Показы реклама по модели (J)
+    columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    // Строка 37: Клики реклама по модели (K)
     columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
     
-    // Строка 33: CTR модели
-    columnData.push(['=IFERROR(' + colLetter + '32/' + colLetter + '31,0)']);
+    // Строка 38: Сумма показов РК по модели (M)
+    columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    // Строка 39: Сумма кликов РК по модели (S)
+    columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    // Строка 40: (44/66 -> 53/58)
+    columnData.push(['=IFERROR(' + colLetter + '47/' + colLetter + '38,0)']);
     
-    // Строка 34: Корзина
+    // Строка 41: CTR модели
+    columnData.push(['=IFERROR(' + colLetter + '37/' + colLetter + '36,0)']);
+    // Строка 42: Корзина
     columnData.push(['=SUMIFS(\'Аналитика продавца\'!$K:$K,\'Аналитика продавца\'!$C:$C,$A$1,\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
-    
-    // Строка 35: Конверсия в корзину
-    columnData.push(['=IFERROR(' + colLetter + '34/(' + colLetter + '27+' + colLetter + '30),0)']);
-    
-    // Строка 36: Конверсия в заказ
-    columnData.push(['=IFERROR(' + colLetter + '9/' + colLetter + '34,0)']);
-    
-    // Строка 37: Общий коэффициент
-    columnData.push(['=' + colLetter + '26*' + colLetter + '35*' + colLetter + '36*1000']);
-    
-    // Строка 38: Затраты на рекламу по артикулу
+    // Строка 43: Конверсия в корзину
+    columnData.push(['=IFERROR(' + colLetter + '42/(' + colLetter + '27+' + colLetter + '30),0)']);
+    // Строка 44: Конверсия в заказ
+    columnData.push(['=IFERROR(' + colLetter + '9/' + colLetter + '42,0)']);
+    // Строка 45: Общий коэффициент
+    columnData.push(['=' + colLetter + '26*' + colLetter + '43*' + colLetter + '44*1000']);
+    // Строка 46: Затраты на рекламу по артикулу
     columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,$A$2,\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8)),(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,$A$2,\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8,\'История рекламных расходов\'!$B:$B,"*"&$A$6&"*")))']);
-    
-    // Строка 39: Затраты на рекламу по модели
+    // Строка 47: Затраты на рекламу по модели
     columnData.push(['=IF($A$6="ВСЕ",(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,"*"&$A$4&"*",\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8)),(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,"*"&$A$4&"*",\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8,\'История рекламных расходов\'!$B:$B,"*"&$A$6&"*")))']);
-    
-    // Строка 40: CPO
-    columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '9,0)']);
-    
-    // Строка 41: CPC по артикулу
-    columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '30,0)']);
-    
-    // Строка 42: CPC по модели
-    columnData.push(['=IFERROR(' + colLetter + '39/' + colLetter + '32,0)']);
-    
-    // Строка 43: CPS по артикулу
-    columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '9*' + colLetter + '24),0)']);
-    
-    // Строка 44: CPS по модели
-    columnData.push(['=IFERROR(' + colLetter + '39/(' + colLetter + '13*' + colLetter + '25),0)']);
-    
-    // Строка 45: ДРР фактическая от заказа цвета на цвет
-    columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '11,0)']);
-    
-    // Строка 46: ДРР вмененная от выкупа цвета на цвет
-    columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '11*#REF!),0)']);
-    
-    // Строка 47: ДРР фактическая от выкупа цвет на цвет
-    columnData.push(['=IFERROR(' + colLetter + '38/#REF!,0)']);
-    
-    // Строка 48: ДРР вмененная от выкупа цвета на модель
-    columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '15*' + colLetter + '25),0)']);
-    
-    // Строка 49: ДРР вмененная всей модели
-    columnData.push(['=IFERROR(' + colLetter + '39/(' + colLetter + '15*' + colLetter + '25),0)']);
-    
-    // Строка 50: Заказов на 1 клик, руб (по модели)
-    columnData.push(['=IFERROR(' + colLetter + '15/' + colLetter + '32,0)']);
+    // Строка 48: CPO
+    columnData.push(['=IFERROR(' + colLetter + '46/' + colLetter + '9,0)']);
+    // Строка 49: CPC по артикулу
+    columnData.push(['=IFERROR(' + colLetter + '46/' + colLetter + '30,0)']);
+    // Строка 50: CPC по модели
+    columnData.push(['=IFERROR(' + colLetter + '47/' + colLetter + '37,0)']);
+    // Строка 51: CPS по артикулу
+    columnData.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '9*' + colLetter + '24),0)']);
+    // Строка 52: CPS по модели
+    columnData.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '13*' + colLetter + '25),0)']);
+    // Строка 53: ДРР фактическая от заказа цвета на цвет
+    columnData.push(['=IFERROR(' + colLetter + '46/' + colLetter + '11,0)']);
+    // Строка 54: ДРР вмененная от выкупа цвета на цвет
+    columnData.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '11*#REF!),0)']);
+    // Строка 55: ДРР фактическая от выкупа цвет на цвет
+    columnData.push(['=IFERROR(' + colLetter + '46/#REF!,0)']);
+    // Строка 56: ДРР вмененная от выкупа цвета на модель
+    columnData.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '15*' + colLetter + '25),0)']);
+    // Строка 57: ДРР вмененная всей модели
+    columnData.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '15*' + colLetter + '25),0)']);
+    // Строка 58: Заказов на 1 клик, руб (по модели)
+    columnData.push(['=IFERROR(' + colLetter + '15/' + colLetter + '37,0)']);
     
     // Записываем все данные в столбец одной операцией
-    sheet.getRange(1, col, 50, 1).setValues(columnData);
+    sheet.getRange(1, col, 58, 1).setValues(columnData);
     
     // Применяем формат даты dd.mm.yyyy к строкам 7 и 8
     var dateRange = sheet.getRange(7, col, 2, 1);
     dateRange.setNumberFormat('dd.mm.yyyy');
     
-    // Числовой формат для строк с числами (заказы, суммы, показы, клики, затраты и т.д.)
-    var numberRows = [9, 11, 13, 15, 17, 18, 19, 22, 23, 27, 28, 30, 31, 32, 34, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50];
-    for (var r = 0; r < numberRows.length; r++) {
-      sheet.getRange(numberRows[r], col).setNumberFormat('#,##0.00');
+    // Целое число (без дробной части): заказы, показы, клики и т.д.
+    var integerRows = [9, 13, 17, 18, 22, 27, 28, 30, 31, 32, 36, 37, 38, 39, 40, 42, 46, 47, 48, 50, 52, 58];
+    for (var r = 0; r < integerRows.length; r++) {
+      sheet.getRange(integerRows[r], col).setNumberFormat('#,##0');
     }
-    // Процентный формат для строк с процентами (динамика, доля, % выкупа, CTR, конверсия)
-    var percentRows = [10, 12, 14, 16, 20, 21, 24, 25, 26, 29, 33, 35, 36];
+    // Процентный формат (динамика, доля, % выкупа, CTR, конверсия)
+    var percentRows = [10, 12, 14, 16, 20, 21, 24, 25, 26, 29, 33, 34, 35, 41, 43, 44];
     for (var p = 0; p < percentRows.length; p++) {
       sheet.getRange(percentRows[p], col).setNumberFormat('0.00%');
     }
-    // Строка 37 — общий коэффициент: число
-    sheet.getRange(37, col).setNumberFormat('#,##0.00');
+    // Российский рубль: строки с суммами в рублях
+    var rubleRows = [11, 15, 19, 23];
+    var rubleFormat = '#,##0.00" ₽"';
+    for (var r = 0; r < rubleRows.length; r++) {
+      sheet.getRange(rubleRows[r], col).setNumberFormat(rubleFormat);
+    }
+    // Числовой формат с дробной частью для остальных строк (49, 51, 53, 54, 55, 56, 57)
+    var numberRows = [49, 51, 53, 54, 55, 56, 57];
+    for (var r = 0; r < numberRows.length; r++) {
+      sheet.getRange(numberRows[r], col).setNumberFormat('#,##0.00');
+    }
+    // Строка 45 — общий коэффициент: число
+    sheet.getRange(45, col).setNumberFormat('#,##0.00');
     
     // Применяем форматирование для дневного столбца
-    // Сначала очищаем фон и УБИРАЕМ ВСЕ РАМКИ со всего столбца (с 1 по 50 строку)
-    var fullColumnRange = sheet.getRange(1, col, 50, 1);
+    // Сначала очищаем фон и УБИРАЕМ ВСЕ РАМКИ со всего столбца (с 1 по 58 строку)
+    var fullColumnRange = sheet.getRange(1, col, 58, 1);
     fullColumnRange.setBackground('#ffffff');
     fullColumnRange.setBorder(false, false, false, false, false, false);
     
-    // --- НОВОЕ ФОРМАТИРОВАНИЕ ПО ЗАПРОСУ (ТОЧНО ПО ФОТО) ---
+  
     // 7 и 8 строка: цвет c5e0b3 и ЖИРНАЯ РАМКА
     var range7_8 = sheet.getRange(7, col, 2, 1);
     range7_8.setBackground('#c5e0b3');
@@ -425,11 +436,17 @@
     // 27-30: светло-голубой(3)
     sheet.getRange(27, col, 4, 1).setBackground('#d0e0e3');
     
-    // 31-33: светло-зеленый(1)
-    sheet.getRange(31, col, 3, 1).setBackground('#d9ead3');
+    // 31-35: новые строки РК по артикулу (M, S и формулы)
+    sheet.getRange(31, col, 5, 1).setBackground('#d9ead3');
     
-    // 40-41: светло-бирюзовый(3)
-    sheet.getRange(40, col, 2, 1).setBackground('#b2dfdb');
+    // 36-37: показы/клики по модели (J, K)
+    sheet.getRange(36, col, 2, 1).setBackground('#d9ead3');
+    
+    // 38-40: новые строки РК по модели (M, S и формула)
+    sheet.getRange(38, col, 3, 1).setBackground('#d9ead3');
+    
+    // 41: CTR модели
+    sheet.getRange(41, col).setBackground('#d9ead3');
     
     // 42: светло-голубой(3)
     sheet.getRange(42, col).setBackground('#d0e0e3');
@@ -437,17 +454,29 @@
     // 43-44: светло-бирюзовый(3)
     sheet.getRange(43, col, 2, 1).setBackground('#b2dfdb');
     
-    // 45: светло-оранжевый(3)
-    sheet.getRange(45, col).setBackground('#ffcc80');
+    // 45: общий коэффициент
+    sheet.getRange(45, col).setBackground('#d9d9d9');
     
-    // 46: светло-оранжевый(2)
-    sheet.getRange(46, col).setBackground('#ffe0b2');
+    // 48-49: светло-бирюзовый(3)
+    sheet.getRange(48, col, 2, 1).setBackground('#b2dfdb');
     
-    // 47-48: светло-оранжевый(3)
-    sheet.getRange(47, col, 2, 1).setBackground('#ffcc80');
+    // 50: светло-голубой(3)
+    sheet.getRange(50, col).setBackground('#d0e0e3');
     
-    // 49: светло-зеленый(3)
-    sheet.getRange(49, col).setBackground('#b6d7a8');
+    // 51-52: светло-бирюзовый(3)
+    sheet.getRange(51, col, 2, 1).setBackground('#b2dfdb');
+    
+    // 53: светло-оранжевый(3)
+    sheet.getRange(53, col).setBackground('#ffe0b2');
+    
+    // 54: светло-оранжевый(2)
+    sheet.getRange(54, col).setBackground('#ffcc80');
+    
+    // 55-56: светло-оранжевый(3)
+    sheet.getRange(55, col, 2, 1).setBackground('#ffe0b2');
+    
+    // 57: светло-зеленый(3)
+    sheet.getRange(57, col).setBackground('#b6d7a8');
     // -----------------------------------------------------
     
     Logger.log('Столбец ' + colLetter + ' успешно добавлен');
@@ -466,6 +495,159 @@
       col = Math.floor((col - mod) / 26);
     }
     return letter;
+  }
+
+  /**
+  * Получить формулы для строк 9–58 дневного столбца (для обновления при переформатировании)
+  * @param {number} col - Номер столбца
+  * @return {Array.<Array.<string>>} Двумерный массив 50x1 (формулы для строк 9–58)
+  */
+  function getDailyColumnFormulas(col) {
+    var colLetter = getColumnLetter(col);
+    var prevColLetter = getColumnLetter(col - 1);
+    var weekStartCol = getColumnLetter(Math.max(col - 6, 2));
+    var formulas = [];
+    formulas.push(['=SUMIFS(\'Аналитика продавца\'!$M:$M,\'Аналитика продавца\'!$B:$B,$A$2,\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
+    formulas.push(['=IFERROR(' + colLetter + '9/' + prevColLetter + '9-1,0)']);
+    formulas.push(['=SUMIFS(\'Аналитика продавца\'!$Y:$Y,\'Аналитика продавца\'!$B:$B,$A$2,\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
+    formulas.push(['=IFERROR(' + colLetter + '11/' + prevColLetter + '11-1,0)']);
+    formulas.push(['=SUMIFS(\'Аналитика продавца\'!$M:$M,\'Аналитика продавца\'!$B:$B,"*"&$A$4&"*",\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
+    formulas.push(['=IFERROR(' + colLetter + '13/' + prevColLetter + '13-1,0)']);
+    formulas.push(['=SUMIFS(\'Аналитика продавца\'!$Y:$Y,\'Аналитика продавца\'!$B:$B,"*"&$A$4&"*",\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
+    formulas.push(['=IFERROR(' + colLetter + '11/' + colLetter + '15,0)']);
+    formulas.push(['=SUMIFS(\'Ежедневные ф отчеты\'!$N:$N,\'Ежедневные ф отчеты\'!$F:$F,$A$2,\'Ежедневные ф отчеты\'!$M:$M,">="&' + colLetter + '7,\'Ежедневные ф отчеты\'!$M:$M,"<="&' + colLetter + '8,\'Ежедневные ф отчеты\'!$J:$J,"Продажа")']);
+    formulas.push(['=SUMIFS(\'Ежедневные ф отчеты\'!$N:$N,\'Ежедневные ф отчеты\'!$F:$F,"*"&$A$4&"*",\'Ежедневные ф отчеты\'!$M:$M,">="&' + colLetter + '7,\'Ежедневные ф отчеты\'!$M:$M,"<="&' + colLetter + '8,\'Ежедневные ф отчеты\'!$J:$J,"Продажа")']);
+    formulas.push(['=SUMIFS(\'Ежедневные ф отчеты\'!$O:$O,\'Ежедневные ф отчеты\'!$F:$F,$A$2,\'Ежедневные ф отчеты\'!$M:$M,">="&' + colLetter + '7,\'Ежедневные ф отчеты\'!$M:$M,"<="&' + colLetter + '8,\'Ежедневные ф отчеты\'!$J:$J,"Продажа")']);
+    formulas.push(['=IFERROR(' + colLetter + '17/' + prevColLetter + '17-1,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '18/' + prevColLetter + '18-1,0)']);
+    formulas.push(['=SUMIFS(\'Ежедневные ф отчеты\'!$N:$N,\'Ежедневные ф отчеты\'!$F:$F,$A$2,\'Ежедневные ф отчеты\'!$M:$M,">="&' + colLetter + '7,\'Ежедневные ф отчеты\'!$M:$M,"<="&' + colLetter + '8,\'Ежедневные ф отчеты\'!$K:$K,"Возврат")']);
+    formulas.push(['=SUMIFS(\'Ежедневные ф отчеты\'!$T:$T,\'Ежедневные ф отчеты\'!$F:$F,$A$2,\'Ежедневные ф отчеты\'!$M:$M,">="&' + colLetter + '7,\'Ежедневные ф отчеты\'!$M:$M,"<="&' + colLetter + '8,\'Ежедневные ф отчеты\'!$K:$K,"Возврат")']);
+    formulas.push(['=SUM(' + weekStartCol + '17:' + colLetter + '17)/SUM(' + weekStartCol + '9:' + colLetter + '9)']);
+    formulas.push(['=SUM(' + weekStartCol + '18:' + colLetter + '18)/SUM(' + weekStartCol + '13:' + colLetter + '13)']);
+    formulas.push(['=IFERROR(' + colLetter + '30/' + colLetter + '28,0)']);
+    formulas.push(['=SUMIFS(\'Аналитика продавца\'!$I:$I,\'Аналитика продавца\'!$C:$C,$A$1,\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IFERROR(' + colLetter + '28/' + prevColLetter + '28-1,0)']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,$A$2,\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IFERROR(' + colLetter + '46/' + colLetter + '32,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '32/' + colLetter + '31,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '31/' + colLetter + '37,0)']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$J:$J,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$K:$K,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$M:$M,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8)),SUMIFS(\'Аналитика РК\'!$S:$S,\'Аналитика РК\'!$L:$L,"*"&$A$4&"*",\'Аналитика РК\'!$A:$A,">="&' + colLetter + '7,\'Аналитика РК\'!$A:$A,"<="&' + colLetter + '8,\'Аналитика РК\'!$D:$D,"*"&$A$6&"*"))']);
+    formulas.push(['=IFERROR(' + colLetter + '47/' + colLetter + '38,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '37/' + colLetter + '36,0)']);
+    formulas.push(['=SUMIFS(\'Аналитика продавца\'!$K:$K,\'Аналитика продавца\'!$C:$C,$A$1,\'Аналитика продавца\'!$A:$A,">="&' + colLetter + '7,\'Аналитика продавца\'!$A:$A,"<="&' + colLetter + '8)']);
+    formulas.push(['=IFERROR(' + colLetter + '42/(' + colLetter + '27+' + colLetter + '30),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '9/' + colLetter + '42,0)']);
+    formulas.push(['=' + colLetter + '26*' + colLetter + '43*' + colLetter + '44*1000']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,$A$2,\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8)),(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,$A$2,\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8,\'История рекламных расходов\'!$B:$B,"*"&$A$6&"*")))']);
+    formulas.push(['=IF($A$6="ВСЕ",(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,"*"&$A$4&"*",\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8)),(SUMIFS(\'История рекламных расходов\'!$G:$G,\'История рекламных расходов\'!$I:$I,"*"&$A$4&"*",\'История рекламных расходов\'!$D:$D,">="&' + colLetter + '7,\'История рекламных расходов\'!$D:$D,"<="&' + colLetter + '8,\'История рекламных расходов\'!$B:$B,"*"&$A$6&"*")))']);
+    formulas.push(['=IFERROR(' + colLetter + '46/' + colLetter + '9,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/' + colLetter + '30,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '47/' + colLetter + '37,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '9*' + colLetter + '24),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '13*' + colLetter + '25),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/' + colLetter + '11,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '11*#REF!),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/#REF!,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '15*' + colLetter + '25),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '15*' + colLetter + '25),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '15/' + colLetter + '37,0)']);
+    return formulas;
+  }
+
+  /**
+  * Получить формулы для строк 9–58 недельного столбца (для обновления при переформатировании)
+  * @param {Sheet} sheet - Лист
+  * @param {number} col - Номер столбца
+  * @return {Array.<Array.<string>>} Двумерный массив 50x1 (формулы для строк 9–58) или null при ошибке
+  */
+  function getWeeklyColumnFormulas(sheet, col) {
+    var colLetter = getColumnLetter(col);
+    var startDateCell = sheet.getRange(7, col).getValue();
+    var endDateCell = sheet.getRange(8, col).getValue();
+    var startDateObj = parseCellDate(startDateCell);
+    var endDateObj = parseCellDate(endDateCell);
+    if (!startDateObj || !endDateObj) {
+      return null;
+    }
+    var lastCol = sheet.getLastColumn();
+    var datesRow = sheet.getRange(8, 2, 1, lastCol - 1).getValues()[0];
+    var weekStartCol = null;
+    var weekEndCol = null;
+    for (var d = 0; d < datesRow.length; d++) {
+      var cellValue = datesRow[d];
+      if (!cellValue || cellValue === '') continue;
+      var cellDateObj = parseCellDate(cellValue);
+      if (!cellDateObj) continue;
+      if (cellDateObj >= startDateObj && cellDateObj <= endDateObj) {
+        if (weekStartCol === null) weekStartCol = d + 2;
+        weekEndCol = d + 2;
+      }
+    }
+    if (weekStartCol === null || weekEndCol === null) {
+      weekStartCol = col;
+      weekEndCol = col;
+    }
+    var weekStartColLetter = getColumnLetter(weekStartCol);
+    var weekEndColLetter = getColumnLetter(weekEndCol);
+    var formulas = [];
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '9:' + weekEndColLetter + '9)']);
+    formulas.push(['']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '11:' + weekEndColLetter + '11)']);
+    formulas.push(['']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '13:' + weekEndColLetter + '13)']);
+    formulas.push(['']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '15:' + weekEndColLetter + '15)']);
+    formulas.push(['=IFERROR(' + colLetter + '11/' + colLetter + '15,0)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '17:' + weekEndColLetter + '17)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '18:' + weekEndColLetter + '18)']);
+    formulas.push(['']);
+    formulas.push(['']);
+    formulas.push(['']);
+    formulas.push(['']);
+    formulas.push(['']);
+    formulas.push(['']);
+    formulas.push(['=SUM(' + weekStartColLetter + '17:' + weekEndColLetter + '17)/SUM(' + weekStartColLetter + '9:' + weekEndColLetter + '9)']);
+    formulas.push(['=' + colLetter + '18/' + colLetter + '13']);
+    formulas.push(['=IFERROR(' + colLetter + '30/' + colLetter + '28,0)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '27:' + weekEndColLetter + '27)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '28:' + weekEndColLetter + '28)']);
+    formulas.push(['']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '30:' + weekEndColLetter + '30)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '31:' + weekEndColLetter + '31)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '32:' + weekEndColLetter + '32)']);
+    formulas.push(['=IFERROR(' + colLetter + '43/' + colLetter + '58,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '58/' + colLetter + '57,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '58/' + colLetter + '37,0)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '36:' + weekEndColLetter + '36)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '37:' + weekEndColLetter + '37)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '38:' + weekEndColLetter + '38)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '39:' + weekEndColLetter + '39)']);
+    formulas.push(['=IFERROR(' + colLetter + '53/' + colLetter + '58,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '37/' + colLetter + '36,0)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '42:' + weekEndColLetter + '42)']);
+    formulas.push(['=IFERROR(' + colLetter + '42/(' + colLetter + '27+' + colLetter + '30),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '9/' + colLetter + '42,0)']);
+    formulas.push(['']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '46:' + weekEndColLetter + '46)']);
+    formulas.push(['=AVERAGE(' + weekStartColLetter + '47:' + weekEndColLetter + '47)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/' + colLetter + '9,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/' + colLetter + '30,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '47/' + colLetter + '37,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '9*#REF!),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '13*#REF!),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/' + colLetter + '11,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '11*#REF!),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/#REF!,0)']);
+    formulas.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '15*#REF!),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '15*#REF!),0)']);
+    formulas.push(['=IFERROR(' + colLetter + '15/' + colLetter + '37,0)']);
+    return formulas;
   }
 
   /**
@@ -692,7 +874,7 @@
     
     Logger.log('Диапазон для усреднения: ' + weekStartColLetter + ' - ' + weekEndColLetter);
     
-    // Массив для хранения всех значений столбца (50 строк)
+    // Массив для хранения всех значений столбца (58 строк — как в дневном)
     var columnData = [];
     
     // Строки 1-6: служебная информация (пустые)
@@ -771,88 +953,90 @@
     
     // Строка 30: Среднее кликов рекламы по цвету за неделю
     columnData.push(['=AVERAGE(' + weekStartColLetter + '30:' + weekEndColLetter + '30)']);
-    
-    // Строка 31: Среднее показов рекламы по модели за неделю
+
+    // --- Новые строки: среднее из дневных столбцов (соответствуют дневным 31-35) ---
+    // Строка 31: Среднее показов РК по артикулу за неделю (из дневных стр. 31)
     columnData.push(['=AVERAGE(' + weekStartColLetter + '31:' + weekEndColLetter + '31)']);
-    
-    // Строка 32: Среднее кликов рекламы по модели за неделю
+    // Строка 32: Среднее кликов РК по артикулу за неделю (из дневных стр. 32)
     columnData.push(['=AVERAGE(' + weekStartColLetter + '32:' + weekEndColLetter + '32)']);
-    
-    // Строка 33: CTR модели
-    columnData.push(['=IFERROR(' + colLetter + '32/' + colLetter + '31,0)']);
-    
-    // Строка 34: Среднее корзины за неделю
-    columnData.push(['=AVERAGE(' + weekStartColLetter + '34:' + weekEndColLetter + '34)']);
-    
-    // Строка 35: Конверсия в корзину
-    columnData.push(['=IFERROR(' + colLetter + '34/(' + colLetter + '27+' + colLetter + '30),0)']);
-    
-    // Строка 36: Конверсия в заказ
-    columnData.push(['=IFERROR(' + colLetter + '9/' + colLetter + '34,0)']);
-    
-    // Строка 37: Общий коэффициент (пусто)
-    columnData.push(['']);
-    
-    // Строка 38: Среднее затрат на рекламу по артикулу за неделю
+    // Строка 33: (43/58 в недельном столбце)
+    columnData.push(['=IFERROR(' + colLetter + '43/' + colLetter + '58,0)']);
+    // Строка 34: (58/57)
+    columnData.push(['=IFERROR(' + colLetter + '58/' + colLetter + '57,0)']);
+    // Строка 35: (58/37)
+    columnData.push(['=IFERROR(' + colLetter + '58/' + colLetter + '37,0)']);
+
+    // Строка 36: Среднее показов рекламы по модели за неделю (из дневных стр. 36)
+    columnData.push(['=AVERAGE(' + weekStartColLetter + '36:' + weekEndColLetter + '36)']);
+    // Строка 37: Среднее кликов рекламы по модели за неделю (из дневных стр. 37)
+    columnData.push(['=AVERAGE(' + weekStartColLetter + '37:' + weekEndColLetter + '37)']);
+
+    // --- Новые строки: среднее из дневных (соответствуют дневным 38-40) ---
+    // Строка 38: Среднее показов РК по модели за неделю (из дневных стр. 38)
     columnData.push(['=AVERAGE(' + weekStartColLetter + '38:' + weekEndColLetter + '38)']);
-    
-    // Строка 39: Среднее затрат на рекламу по модели за неделю
+    // Строка 39: Среднее кликов РК по модели за неделю (из дневных стр. 39)
     columnData.push(['=AVERAGE(' + weekStartColLetter + '39:' + weekEndColLetter + '39)']);
-    
-    // Строка 40: CPO
-    columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '9,0)']);
-    
-    // Строка 41: CPC по артикулу
-    columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '30,0)']);
-    
-    // Строка 42: CPC по модели
-    columnData.push(['=IFERROR(' + colLetter + '39/' + colLetter + '32,0)']);
-    
-    // Строка 43: CPS по артикулу
-    columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '9*#REF!),0)']);
-    
-    // Строка 44: CPS по модели
-    columnData.push(['=IFERROR(' + colLetter + '39/(' + colLetter + '13*#REF!),0)']);
-    
-    // Строка 45: ДРР фактическая от заказа цвета на цвет
-    columnData.push(['=IFERROR(' + colLetter + '38/' + colLetter + '11,0)']);
-    
-    // Строка 46: ДРР вмененная от выкупа цвета на цвет
-    columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '11*#REF!),0)']);
-    
-    // Строка 47: ДРР фактическая от выкупа цвет на цвет
-    columnData.push(['=IFERROR(' + colLetter + '38/#REF!,0)']);
-    
-    // Строка 48: ДРР вмененная от выкупа цвета на модель
-    columnData.push(['=IFERROR(' + colLetter + '38/(' + colLetter + '15*#REF!),0)']);
-    
-    // Строка 49: ДРР вмененная всей модели
-    columnData.push(['=IFERROR(' + colLetter + '39/(' + colLetter + '15*#REF!),0)']);
-    
-    // Строка 50: Заказов на 1 клик, руб (по модели)
-    columnData.push(['=IFERROR(' + colLetter + '15/' + colLetter + '32,0)']);
-    
+    // Строка 40: (53/58 в недельном столбце)
+    columnData.push(['=IFERROR(' + colLetter + '53/' + colLetter + '58,0)']);
+
+    // Строка 41: CTR модели
+    columnData.push(['=IFERROR(' + colLetter + '37/' + colLetter + '36,0)']);
+    // Строка 42: Среднее корзины за неделю (из дневных стр. 42)
+    columnData.push(['=AVERAGE(' + weekStartColLetter + '42:' + weekEndColLetter + '42)']);
+    // Строка 43: Конверсия в корзину
+    columnData.push(['=IFERROR(' + colLetter + '42/(' + colLetter + '27+' + colLetter + '30),0)']);
+    // Строка 44: Конверсия в заказ
+    columnData.push(['=IFERROR(' + colLetter + '9/' + colLetter + '42,0)']);
+    // Строка 45: Общий коэффициент (пусто)
+    columnData.push(['']);
+    // Строка 46: Среднее затрат на рекламу по артикулу за неделю (из дневных стр. 46)
+    columnData.push(['=AVERAGE(' + weekStartColLetter + '46:' + weekEndColLetter + '46)']);
+    // Строка 47: Среднее затрат на рекламу по модели за неделю (из дневных стр. 47)
+    columnData.push(['=AVERAGE(' + weekStartColLetter + '47:' + weekEndColLetter + '47)']);
+    // Строка 48: CPO
+    columnData.push(['=IFERROR(' + colLetter + '46/' + colLetter + '9,0)']);
+    // Строка 49: CPC по артикулу
+    columnData.push(['=IFERROR(' + colLetter + '46/' + colLetter + '30,0)']);
+    // Строка 50: CPC по модели
+    columnData.push(['=IFERROR(' + colLetter + '47/' + colLetter + '37,0)']);
+    // Строка 51: CPS по артикулу
+    columnData.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '9*#REF!),0)']);
+    // Строка 52: CPS по модели
+    columnData.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '13*#REF!),0)']);
+    // Строка 53: ДРР фактическая от заказа цвета на цвет
+    columnData.push(['=IFERROR(' + colLetter + '46/' + colLetter + '11,0)']);
+    // Строка 54: ДРР вмененная от выкупа цвета на цвет
+    columnData.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '11*#REF!),0)']);
+    // Строка 55: ДРР фактическая от выкупа цвет на цвет
+    columnData.push(['=IFERROR(' + colLetter + '46/#REF!,0)']);
+    // Строка 56: ДРР вмененная от выкупа цвета на модель
+    columnData.push(['=IFERROR(' + colLetter + '46/(' + colLetter + '15*#REF!),0)']);
+    // Строка 57: ДРР вмененная всей модели
+    columnData.push(['=IFERROR(' + colLetter + '47/(' + colLetter + '15*#REF!),0)']);
+    // Строка 58: Заказов на 1 клик, руб (по модели)
+    columnData.push(['=IFERROR(' + colLetter + '15/' + colLetter + '37,0)']);
+
     // Записываем все данные в столбец одной операцией
-    sheet.getRange(1, col, 50, 1).setValues(columnData);
+    sheet.getRange(1, col, 58, 1).setValues(columnData);
     
     // Применяем формат даты dd.mm.yyyy к строкам 7 и 8
     var dateRange = sheet.getRange(7, col, 2, 1);
     dateRange.setNumberFormat('dd.mm.yyyy');
     
     // Числовой формат для недельного столбца (средние заказы, суммы, показы, клики, затраты и т.д.)
-    var numberRowsWeekly = [9, 11, 13, 15, 17, 18, 27, 28, 30, 31, 32, 34, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50];
+    var numberRowsWeekly = [9, 11, 13, 15, 17, 18, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 42, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58];
     for (var r = 0; r < numberRowsWeekly.length; r++) {
       sheet.getRange(numberRowsWeekly[r], col).setNumberFormat('#,##0.00');
     }
     // Процентный формат для строк с процентами (доля, % выкупа, CTR, конверсия)
-    var percentRowsWeekly = [16, 24, 25, 26, 33, 35, 36];
+    var percentRowsWeekly = [16, 24, 25, 26, 41, 43, 44];
     for (var p = 0; p < percentRowsWeekly.length; p++) {
       sheet.getRange(percentRowsWeekly[p], col).setNumberFormat('0.00%');
     }
     
-    // Применяем форматирование: недельный отчет теперь имеет такие же цвета, как дневной
-    // Сначала очищаем фон и УБИРАЕМ ВСЕ РАМКИ со всего столбца (с 1 по 50 строку)
-    var fullColumnRange = sheet.getRange(1, col, 50, 1);
+    // Применяем форматирование: недельный отчет теперь имеет такие же цвета, как дневной (58 строк)
+    // Сначала очищаем фон и УБИРАЕМ ВСЕ РАМКИ со всего столбца (с 1 по 58 строку)
+    var fullColumnRange = sheet.getRange(1, col, 58, 1);
     fullColumnRange.setBackground('#ffffff');
     fullColumnRange.setBorder(false, false, false, false, false, false);
     
@@ -862,7 +1046,7 @@
     // Устанавливаем рамку только для дат (внешнюю и внутреннюю горизонтальную)
     range7_8.setBorder(true, true, true, true, null, true, '#000000', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
     
-    // Для недельного отчета также подкрашиваем ключевые строки в точности как в дневном
+    // Для недельного отчета подкрашиваем ключевые строки как в дневном (58 строк)
     // 9 и 13 строка: ярко-зеленый
     sheet.getRange(9, col).setBackground('#00ff00');
     sheet.getRange(13, col).setBackground('#00ff00');
@@ -879,11 +1063,17 @@
     // 27-30: светло-голубой(3)
     sheet.getRange(27, col, 4, 1).setBackground('#d0e0e3');
     
-    // 31-33: светло-зеленый(1)
-    sheet.getRange(31, col, 3, 1).setBackground('#d9ead3');
+    // 31-35: новые строки РК по артикулу (средние из дневных)
+    sheet.getRange(31, col, 5, 1).setBackground('#d9ead3');
     
-    // 40-41: светло-бирюзовый(3)
-    sheet.getRange(40, col, 2, 1).setBackground('#b2dfdb');
+    // 36-37: среднее показов/кликов по модели
+    sheet.getRange(36, col, 2, 1).setBackground('#d9ead3');
+    
+    // 38-40: новые строки РК по модели (средние из дневных)
+    sheet.getRange(38, col, 3, 1).setBackground('#d9ead3');
+    
+    // 41: CTR модели
+    sheet.getRange(41, col).setBackground('#d9ead3');
     
     // 42: светло-голубой(3)
     sheet.getRange(42, col).setBackground('#d0e0e3');
@@ -891,24 +1081,36 @@
     // 43-44: светло-бирюзовый(3)
     sheet.getRange(43, col, 2, 1).setBackground('#b2dfdb');
     
-    // 45: светло-оранжевый(3)
-    sheet.getRange(45, col).setBackground('#ffe0b2');
+    // 45: общий коэффициент
+    sheet.getRange(45, col).setBackground('#d9d9d9');
     
-    // 46: светло-оранжевый(2)
-    sheet.getRange(46, col).setBackground('#ffcc80');
-    // 47-48: светло-оранжевый(3)
-    sheet.getRange(47, col, 2, 1).setBackground('#ffe0b2');
+    // 48-49: светло-бирюзовый(3)
+    sheet.getRange(48, col, 2, 1).setBackground('#b2dfdb');
     
-    // 49: светло-зеленый(3)
-    sheet.getRange(49, col).setBackground('#b6d7a8');
+    // 50: светло-голубой(3)
+    sheet.getRange(50, col).setBackground('#d0e0e3');
     
-    // Недельный отчет: только внешняя рамка (7-50), без внутренних линий между ячейками. Внутренние горизонтали — только под строками 7 и 8.
+    // 51-52: светло-бирюзовый(3)
+    sheet.getRange(51, col, 2, 1).setBackground('#b2dfdb');
+    
+    // 53: светло-оранжевый(3)
+    sheet.getRange(53, col).setBackground('#ffe0b2');
+    
+    // 54: светло-оранжевый(2)
+    sheet.getRange(54, col).setBackground('#ffcc80');
+    // 55-56: светло-оранжевый(3)
+    sheet.getRange(55, col, 2, 1).setBackground('#ffe0b2');
+    
+    // 57: светло-зеленый(3)
+    sheet.getRange(57, col).setBackground('#b6d7a8');
+    
+    // Недельный отчет: только внешняя рамка (7-58), без внутренних линий между ячейками. Внутренние горизонтали — только под строками 7 и 8.
     if (col < sheet.getMaxColumns()) {
-      sheet.getRange(7, col, 44, 2).setBorder(true, true, true, false, false, true, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
-      sheet.getRange(7, col, 1, 2).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
-      sheet.getRange(8, col, 1, 2).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(7, col, 52, 1).setBorder(true, true, true, false, false, true, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(7, col, 1, 1).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(8, col, 1, 1).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
     } else {
-      sheet.getRange(7, col, 44, 1).setBorder(true, true, true, true, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(7, col, 52, 1).setBorder(true, true, true, true, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
       sheet.getRange(7, col, 1, 1).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
       sheet.getRange(8, col, 1, 1).setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
     }
@@ -965,6 +1167,7 @@
             daysAdded++;
           }
         } catch (error) {
+
           Logger.log('Ошибка при добавлении столбца для ' + dateStr + ': ' + error.toString());
         }
         
@@ -1046,17 +1249,15 @@
           weeklyCols.push(col);
         }
         
-        // 1. Применяем базовый фон и рамки
-        // Сначала очищаем фон и УБИРАЕМ ВСЕ РАМКИ со всего столбца (с 1 по 50 строку)
-        var fullColumnRange = sheet.getRange(1, col, 50, 1);
+        // 1. Применяем базовый фон и рамки (58 строк — как в дневном/недельном столбце)
+        var fullColumnRange = sheet.getRange(1, col, 58, 1);
         fullColumnRange.setBackground('#ffffff');
         fullColumnRange.setBorder(false, false, false, false, false, false);
         
-        // --- ПРИМЕНЯЕМ ЦВЕТА В ТОЧНОСТИ ПО ФОТО ---
+        // --- ПРИМЕНЯЕМ ЦВЕТА (58 строк) ---
         // 2. 7 и 8 строка: цвет c5e0b3 и ЖИРНАЯ РАМКА
         var range7_8 = sheet.getRange(7, col, 2, 1);
         range7_8.setBackground('#c5e0b3');
-        // Устанавливаем рамку только для дат (внешнюю и внутреннюю горизонтальную)
         range7_8.setBorder(true, true, true, true, null, true, '#000000', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
         
         // 3. 9 и 13 строка: ярко-зеленый
@@ -1072,45 +1273,71 @@
         // 6. 24 и 25 строка: серый
         sheet.getRange(24, col, 2, 1).setBackground('#d9d9d9');
         
-        // 7. 27-30: светло-голубой(3)
+        // 7. 27-30: светло-голубой
         sheet.getRange(27, col, 4, 1).setBackground('#d0e0e3');
         
-        // 8. 31-33: светло-зеленый(1)
-        sheet.getRange(31, col, 3, 1).setBackground('#d9ead3');
+        // 8. 31-35: новые строки РК по артикулу
+        sheet.getRange(31, col, 5, 1).setBackground('#d9ead3');
         
-        // 9. 40-41: светло-бирюзовый(3)
-        sheet.getRange(40, col, 2, 1).setBackground('#b2dfdb');
+        // 9. 36-37: показы/клики по модели
+        sheet.getRange(36, col, 2, 1).setBackground('#d9ead3');
         
-        // 10. 42: светло-голубой(3)
+        // 10. 38-40: новые строки РК по модели
+        sheet.getRange(38, col, 3, 1).setBackground('#d9ead3');
+        
+        // 11. 41: CTR модели
+        sheet.getRange(41, col).setBackground('#d9ead3');
+        
+        // 12. 42: светло-голубой
         sheet.getRange(42, col).setBackground('#d0e0e3');
         
-        // 11. 43-44: светло-бирюзовый(3)
+        // 13. 43-44: светло-бирюзовый
         sheet.getRange(43, col, 2, 1).setBackground('#b2dfdb');
         
-        // 12. 45: светло-оранжевый(3), 46: светло-оранжевый(2), 47-48: светло-оранжевый(3)
-        sheet.getRange(45, col).setBackground('#ffcc80');
-        sheet.getRange(46, col).setBackground('#ffe0b2');
-        sheet.getRange(47, col, 2, 1).setBackground('#ffcc80');
+        // 14. 45: общий коэффициент
+        sheet.getRange(45, col).setBackground('#d9d9d9');
         
-        // 13. 49: светло-зеленый(3)
-        sheet.getRange(49, col).setBackground('#b6d7a8');
+        // 15. 48-49: светло-бирюзовый
+        sheet.getRange(48, col, 2, 1).setBackground('#b2dfdb');
         
-        // Форматы чисел: дата в 7–8, числа и проценты по типам строк
+        // 16. 50: светло-голубой
+        sheet.getRange(50, col).setBackground('#d0e0e3');
+        
+        // 17. 51-52: светло-бирюзовый
+        sheet.getRange(51, col, 2, 1).setBackground('#b2dfdb');
+        
+        // 18. 53-56: светло-оранжевый
+        sheet.getRange(53, col).setBackground('#ffe0b2');
+        sheet.getRange(54, col).setBackground('#ffcc80');
+        sheet.getRange(55, col, 2, 1).setBackground('#ffe0b2');
+        
+        // 19. 57: светло-зеленый
+        sheet.getRange(57, col).setBackground('#b6d7a8');
+        
+        // Форматы чисел: дата в 7–8; целые; проценты; рубли; числа с дробной частью (58 строк)
         sheet.getRange(7, col, 8, col).setNumberFormat('dd.mm.yyyy');
-        var numberRowsAll = [9, 11, 13, 15, 17, 18, 19, 22, 23, 27, 28, 30, 31, 32, 34, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50];
-        for (var r = 0; r < numberRowsAll.length; r++) {
-          sheet.getRange(numberRowsAll[r], col).setNumberFormat('#,##0.00');
+        var integerRowsAll = [9, 13, 17, 18, 22, 27, 28, 30, 31, 32, 36, 37, 38, 39, 40, 42, 46, 47, 48, 50, 52, 58];
+        for (var r = 0; r < integerRowsAll.length; r++) {
+          sheet.getRange(integerRowsAll[r], col).setNumberFormat('#,##0');
         }
-        var percentRowsAll = [10, 12, 14, 16, 20, 21, 24, 25, 26, 29, 33, 35, 36];
+        var percentRowsAll = [10, 12, 14, 16, 20, 21, 24, 25, 26, 29, 33, 34, 35, 41, 43, 44];
         for (var p = 0; p < percentRowsAll.length; p++) {
           sheet.getRange(percentRowsAll[p], col).setNumberFormat('0.00%');
         }
+        var rubleRowsAll = [11, 15, 19, 23];
+        var rubleFormatAll = '#,##0.00" ₽"';
+        for (var r = 0; r < rubleRowsAll.length; r++) {
+          sheet.getRange(rubleRowsAll[r], col).setNumberFormat(rubleFormatAll);
+        }
+        var numberRowsAll = [45, 49, 51, 53, 54, 55, 56, 57];
+        for (var r = 0; r < numberRowsAll.length; r++) {
+          sheet.getRange(numberRowsAll[r], col).setNumberFormat('#,##0.00');
+        }
         
-        // Дополнительно для недельных: только внешняя рамка (7-50), внутренние горизонтали только под строками 7 и 8
+        // Дополнительно для недельных: только внешняя рамка (7-58), внутренние горизонтали только под строками 7 и 8
         if (isWeekly) {
           if (col < sheet.getMaxColumns()) {
-                      // Внешняя рамка только для текущего столбца (7–50)
-            sheet.getRange(7, col, 44, 1).setBorder(
+            sheet.getRange(7, col, 52, 1).setBorder(
               true, true, true, false,
               false, false,
               '#000000',
@@ -1134,8 +1361,7 @@
   );
 
           } else {
-                    // Внешняя рамка для текущего столбца (7–50)
-            sheet.getRange(7, col, 44, 1).setBorder(
+            sheet.getRange(7, col, 52, 1).setBorder(
               true, true, true, true,
               false, false,
               '#000000',
@@ -1158,13 +1384,19 @@
             );
           }
         }
+        
+        // Обновляем формулы для столбца (строки 9–58)
+        var formulas = isWeekly ? getWeeklyColumnFormulas(sheet, col) : getDailyColumnFormulas(col);
+        if (formulas && formulas.length === 50) {
+          sheet.getRange(9, col, 50, 1).setFormulas(formulas);
+        }
       }
       
       // После цикла при очистке col+1 могла сброситься правая граница недельного столбца — дорисовываем левую границу у col+1
       for (var w = 0; w < weeklyCols.length; w++) {
         var c = weeklyCols[w];
         if (c < sheet.getMaxColumns()) {
-          sheet.getRange(7, c + 1, 44, 1).setBorder(false, true, false, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
+          sheet.getRange(7, c + 1, 52, 1).setBorder(false, true, false, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID_THICK);
         }
       }
       
